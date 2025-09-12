@@ -1,6 +1,5 @@
 import { useState } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import UserMetaCard from "../components/UserProfile/UserMetaCard";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
 import PageMeta from "../components/common/PageMeta";
 
@@ -39,7 +38,7 @@ export default function UserProfiles() {
       <PageBreadcrumb pageTitle="Profile" />
       <div className="dark:border-gray-800 dark:bg-white/[0.03] lg:p-0">
         <div className="space-y-6">
-          <UserMetaCard name={formData.name} />
+          {/* <UserMetaCard name={formData.name} /> */}
           <UserInfoCard formData={formData} handleChange={handleChange} />
         </div>
       </div>
