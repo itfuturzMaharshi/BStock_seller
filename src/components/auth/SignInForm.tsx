@@ -1,13 +1,47 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { FormEvent, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
+import { AuthService, EmailNotVerifiedError } from "../../services/auth/auth.services";
+import toastHelper from "../../utils/toastHelper";
 
 export default function SignInForm() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toastHelper.error("Email and password are required");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const response = await AuthService.login({ email, password });
+      if(response.data){
+        toastHelper.success("Logged in successfully");
+        navigate("/");
+
+      }
+    } catch (error: any) {
+      console.log(error)
+      if (error instanceof EmailNotVerifiedError) {
+        toastHelper.info(error.message);
+        navigate("/verify-notice");
+      } else {
+        const message = error?.response?.data?.message || error?.message || "Login failed";
+        toastHelper.error(message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
   return (
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
@@ -27,13 +61,18 @@ export default function SignInForm() {
             </h1>
           </div>
           <div>
-            <form>
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
                   <Label>
                     Email <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="info@gmail.com" />
+                  <Input
+                    placeholder="info@gmail.com"
+                    type="email"
+                    value={email}
+                    onChange={(e: any) => setEmail(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label>
@@ -43,6 +82,8 @@ export default function SignInForm() {
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      value={password}
+                      onChange={(e: any) => setPassword(e.target.value)}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -71,8 +112,12 @@ export default function SignInForm() {
                   </Link> */}
                 </div>
                 <div>
-                  <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg shadow-theme-xs bg-[#0071E0] hover:bg-[#005bb8]">
-                    Sign in
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg shadow-theme-xs bg-[#0071E0] hover:bg-[#005bb8] disabled:opacity-60"
+                  >
+                    {submitting ? "Signing in..." : "Sign in"}
                   </button>
                 </div>
               </div>

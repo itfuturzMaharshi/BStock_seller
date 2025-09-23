@@ -1,14 +1,56 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { FormEvent, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
+import { AuthService } from "../../services/auth/auth.services";
+import toastHelper from "../../utils/toastHelper";
 
 export default function SignUpForm() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [countryCode, setCountryCode] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !phone || !password || !confirmPassword) {
+      toastHelper.error("Please fill in all required fields");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toastHelper.error("Passwords do not match");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await AuthService.register({
+        name,
+        email,
+        password,
+        mobileNumber: phone,
+      });
+      // Attempt to send verification email immediately after successful registration
+      try {
+        await AuthService.resendVerificationEmail(email);
+      } catch {}
+      toastHelper.success("Registered successfully. Please verify your email.");
+      navigate(`/verify-notice?email=${encodeURIComponent(email)}`);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Registration failed";
+      toastHelper.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
@@ -30,7 +72,7 @@ export default function SignUpForm() {
           </div>
 
           <div>
-            <form>
+            <form onSubmit={handleSubmit}>
               <div className="space-y-5">
                 {/* <!-- Name --> */}
                 <div>
@@ -42,6 +84,8 @@ export default function SignUpForm() {
                     id="name"
                     name="name"
                     placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e: any) => setName(e.target.value)}
                   />
                 </div>
 
@@ -55,6 +99,8 @@ export default function SignUpForm() {
                     id="email"
                     name="email"
                     placeholder="Enter your email"
+                    value={email}
+                    onChange={(e: any) => setEmail(e.target.value)}
                   />
                 </div>
 
@@ -69,6 +115,8 @@ export default function SignUpForm() {
                       id="countryCode"
                       name="countryCode"
                       placeholder="+91"
+                      value={countryCode}
+                      onChange={(e: any) => setCountryCode(e.target.value)}
                     />
                   </div>
                   <div className="col-span-2">
@@ -80,6 +128,8 @@ export default function SignUpForm() {
                       id="phone"
                       name="phone"
                       placeholder="Enter your phone number"
+                      value={phone}
+                      onChange={(e: any) => setPhone(e.target.value)}
                     />
                   </div>
                 </div>
@@ -93,6 +143,8 @@ export default function SignUpForm() {
                     <Input
                       placeholder="Enter your password"
                       type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e: any) => setPassword(e.target.value)}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -116,6 +168,8 @@ export default function SignUpForm() {
                     <Input
                       placeholder="Confirm your password"
                       type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e: any) => setConfirmPassword(e.target.value)}
                     />
                     <span
                       onClick={() =>
@@ -153,8 +207,12 @@ export default function SignUpForm() {
 
                 {/* <!-- Button --> */}
                 <div>
-                  <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg shadow-theme-xs bg-[#0071E0] hover:bg-[#005bb8]">
-                    Sign Up
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg shadow-theme-xs bg-[#0071E0] hover:bg-[#005bb8] disabled:opacity-60"
+                  >
+                    {submitting ? "Signing up..." : "Sign Up"}
                   </button>
                 </div>
               </div>

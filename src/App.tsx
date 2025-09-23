@@ -19,6 +19,8 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import Products from "./pages/Products/Products";
+import VerifyEmail from "./pages/AuthPages/VerifyEmail";
+import VerifyNotice from "./pages/AuthPages/VerifyNotice";
 
 export default function App() {
   return (
@@ -58,6 +60,8 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/api/seller/verify-email/:token" element={<VerifyEmail />} />
+          <Route path="/verify-notice" element={<VerifyNotice />} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />

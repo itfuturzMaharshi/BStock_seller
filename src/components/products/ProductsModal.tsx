@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // Define the interface for Product data
 interface Product {
   skuFamilyId: string;
-  simType: string[];
+  simType: string | string[];
   color: string;
-  ram: string[];
-  storage: string[];
+  ram: string | string[];
+  storage: string | string[];
   condition: string;
   price: number;
   stock: number;
   country: string;
   moq: number;
   isNegotiable: boolean;
+  isFlashDeal?: string;
+  expiryTime?: string;
 }
 
 // Define the interface for form data
@@ -23,17 +27,19 @@ interface FormData {
   ram: string[];
   storage: string[];
   condition: string;
-  price: number;
-  stock: number;
+  price: number | string;
+  stock: number | string;
   country: string;
-  moq: number;
+  moq: number | string;
   isNegotiable: boolean;
+  isFlashDeal: string;
+  expiryTime: string;
 }
 
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newItem: Product) => void;
+  onSave: (newItem: FormData) => void;
   editItem?: Product;
 }
 
@@ -55,12 +61,15 @@ const ProductModal: React.FC<ProductModalProps> = ({
     country: "",
     moq: 0,
     isNegotiable: false,
+    isFlashDeal: "",
+    expiryTime: "",
   });
+  const [dateError, setDateError] = useState<string | null>(null);
 
   const colorOptions = ["Graphite", "Silver", "Gold", "Sierra Blue", "Mixed"];
   const countryOptions = ["Hongkong", "Dubai", "Singapore"];
-  const simOptions = ["esim", "physical sim"];
-  const ramOptions = ["4GB", "8GB", "16GB", "32GB"];
+  const simOptions = ["E-Sim", "Physical Sim"];
+  const ramOptions = ["4GB", "6GB", "8GB", "16GB", "32GB"];
   const storageOptions = ["128GB", "256GB", "512GB", "1TB"];
   const conditionOptions = ["AAA", "A+", "Mixed"];
 
@@ -69,16 +78,18 @@ const ProductModal: React.FC<ProductModalProps> = ({
       if (editItem) {
         setFormData({
           skuFamilyId: editItem.skuFamilyId,
-          simType: editItem.simType,
+          simType: Array.isArray(editItem.simType) ? editItem.simType : [editItem.simType].filter(Boolean),
           color: editItem.color,
-          ram: editItem.ram,
-          storage: editItem.storage,
+          ram: Array.isArray(editItem.ram) ? editItem.ram : [editItem.ram].filter(Boolean),
+          storage: Array.isArray(editItem.storage) ? editItem.storage : [editItem.storage].filter(Boolean),
           condition: editItem.condition,
           price: editItem.price,
           stock: editItem.stock,
           country: editItem.country,
           moq: editItem.moq,
           isNegotiable: editItem.isNegotiable,
+          isFlashDeal: editItem.isFlashDeal || "",
+          expiryTime: editItem.expiryTime || "",
         });
       } else {
         setFormData({
@@ -93,22 +104,22 @@ const ProductModal: React.FC<ProductModalProps> = ({
           country: "",
           moq: 0,
           isNegotiable: false,
+          isFlashDeal: "",
+          expiryTime: "",
         });
       }
+      setDateError(null);
     }
   }, [isOpen, editItem]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value,
+      [name]: type === "checkbox" ? checked : type === "number" ? parseFloat(value) || 0 : value,
     }));
-  };
-
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof FormData) => {
@@ -122,14 +133,33 @@ const ProductModal: React.FC<ProductModalProps> = ({
     });
   };
 
+  const handleDateChange = (date: Date | null) => {
+    if (date && !isNaN(date.getTime())) {
+      setFormData((prev) => ({
+        ...prev,
+        expiryTime: date.toISOString(),
+      }));
+      setDateError(null);
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        expiryTime: "",
+      }));
+      setDateError("Please select a valid date and time");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.skuFamilyId) {
       alert("Please enter a SKU Family ID");
       return;
     }
-    const newItem: Product = { ...formData };
-    onSave(newItem);
+    if (!formData.expiryTime) {
+      setDateError("Expiry time is required");
+      return;
+    }
+    onSave(formData);
     onClose();
   };
 
@@ -187,7 +217,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <select
                 name="country"
                 value={formData.country}
-                onChange={handleSelectChange}
+                onChange={handleInputChange}
                 className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                 required
               >
@@ -233,7 +263,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <select
                 name="color"
                 value={formData.color}
-                onChange={handleSelectChange}
+                onChange={handleInputChange}
                 className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                 required
               >
@@ -286,7 +316,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                       onChange={(e) => handleCheckboxChange(e, 'storage')}
                       className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
                     />
-                    <span className="ml-3 text-base text-gray-950 dark:text-gray-200">
+                    <span className="ml-3 text-base  text-gray-950 dark:text-gray-200">
                       {option}
                     </span>
                   </div>
@@ -304,7 +334,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <select
                 name="condition"
                 value={formData.condition}
-                onChange={handleSelectChange}
+                onChange={handleInputChange}
                 className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                 required
               >
@@ -370,18 +400,56 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          {/* Is Negotiable */}
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              name="isNegotiable"
-              checked={formData.isNegotiable}
-              onChange={handleInputChange}
-              className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
-            />
-            <label className="ml-3 text-base font-medium text-gray-950 dark:text-gray-200">
-              Is Negotiable
-            </label>
+          {/* Negotiable, Flash Deal, and Expiry Time Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="isNegotiable"
+                checked={formData.isNegotiable}
+                onChange={handleInputChange}
+                className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
+              />
+              <label className="ml-3 text-base font-medium text-gray-950 dark:text-gray-200">
+                Is Negotiable
+              </label>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="isFlashDeal"
+                checked={formData.isFlashDeal === "true"}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    isFlashDeal: e.target.checked ? "true" : "",
+                  }))
+                }
+                className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
+              />
+              <label className="ml-3 text-base font-medium text-gray-950 dark:text-gray-200">
+                Is Flash Deal
+              </label>
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
+                Expiry Time
+              </label>
+              <DatePicker
+                selected={formData.expiryTime ? new Date(formData.expiryTime) : null}
+                onChange={handleDateChange}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="yyyy-MM-dd HH:mm"
+                placeholderText="Select date and time"
+                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                required
+              />
+              {dateError && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{dateError}</p>
+              )}
+            </div>
           </div>
 
           {/* Buttons */}
@@ -396,6 +464,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <button
               type="submit"
               className="px-6 py-2.5 bg-[#0071E0] text-white rounded-lg hover:bg-blue-600 transition duration-200 transform hover:scale-105"
+              disabled={!!dateError}
             >
               {editItem ? "Update Product" : "Create Product"}
             </button>
