@@ -1,12 +1,14 @@
 import React, { useState, useRef } from "react";
 import toastHelper from "../../utils/toastHelper";
+import { ProductService } from "../../services/products/products.services";
 
 interface UploadExcelModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose }) => {
+const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,12 +70,13 @@ const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose }) 
       return;
     }
     try {
-      // Simulate file upload without API
+      await ProductService.importExcel(file);
       toastHelper.showTost("File uploaded successfully!", "success");
       setFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      onSuccess();
       onClose();
     } catch (error) {
       console.error("Failed to upload file:", error);
@@ -86,7 +89,6 @@ const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose }) 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 transition-opacity duration-300">
       <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-[600px] max-h-[88vh] overflow-y-auto transform transition-all duration-300 scale-100">
-        {/* Close Icon */}
         <button
           type="button"
           onClick={onClose}
@@ -106,7 +108,6 @@ const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose }) 
             />
           </svg>
         </button>
-        {/* Sample Excel Download */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
             Upload Excel File
@@ -121,7 +122,6 @@ const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose }) 
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Drag and Drop Area */}
           <div
             className={`w-full p-6 bg-gray-50 dark:bg-gray-800 border-2 border-dashed rounded-lg text-center ${
               isDragging ? "border-blue-500 bg-blue-50 dark:bg-blue-900/50" : "border-gray-300 dark:border-gray-600"
@@ -161,7 +161,6 @@ const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose }) 
               </div>
             )}
           </div>
-          {/* Buttons */}
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"

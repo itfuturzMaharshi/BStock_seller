@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import AsyncSelect from "react-select/async";
+import { ProductService } from "../../services/products/products.services";
 
-// Define the interface for Product data
 interface Product {
-  skuFamilyId: string;
+  _id?: string;
+  specification: string | { name: string; _id: string };
   simType: string | string[];
   color: string;
   ram: string | string[];
@@ -15,24 +17,27 @@ interface Product {
   country: string;
   moq: number;
   isNegotiable: boolean;
-  isFlashDeal?: string;
+  isFlashDeal?: boolean;
   expiryTime?: string;
+  isVerified?: boolean;
+  isApproved?: boolean;
+  canVerify?: boolean;
+  canApprove?: boolean;
 }
 
-// Define the interface for form data
 interface FormData {
-  skuFamilyId: string;
-  simType: string[];
+  specification: string;
+  simType: string;
   color: string;
-  ram: string[];
-  storage: string[];
+  ram: string;
+  storage: string;
   condition: string;
   price: number | string;
   stock: number | string;
   country: string;
   moq: number | string;
   isNegotiable: boolean;
-  isFlashDeal: string;
+  isFlashDeal: boolean;
   expiryTime: string;
 }
 
@@ -50,18 +55,18 @@ const ProductModal: React.FC<ProductModalProps> = ({
   editItem,
 }) => {
   const [formData, setFormData] = useState<FormData>({
-    skuFamilyId: "",
-    simType: [],
+    specification: "",
+    simType: "",
     color: "",
-    ram: [],
-    storage: [],
+    ram: "",
+    storage: "",
     condition: "",
     price: 0,
     stock: 0,
     country: "",
     moq: 0,
     isNegotiable: false,
-    isFlashDeal: "",
+    isFlashDeal: false,
     expiryTime: "",
   });
   const [dateError, setDateError] = useState<string | null>(null);
@@ -77,34 +82,34 @@ const ProductModal: React.FC<ProductModalProps> = ({
     if (isOpen) {
       if (editItem) {
         setFormData({
-          skuFamilyId: editItem.skuFamilyId,
-          simType: Array.isArray(editItem.simType) ? editItem.simType : [editItem.simType].filter(Boolean),
-          color: editItem.color,
-          ram: Array.isArray(editItem.ram) ? editItem.ram : [editItem.ram].filter(Boolean),
-          storage: Array.isArray(editItem.storage) ? editItem.storage : [editItem.storage].filter(Boolean),
-          condition: editItem.condition,
-          price: editItem.price,
-          stock: editItem.stock,
-          country: editItem.country,
-          moq: editItem.moq,
-          isNegotiable: editItem.isNegotiable,
-          isFlashDeal: editItem.isFlashDeal || "",
+          specification: editItem.specification?.name || editItem.specification || "",
+          simType: Array.isArray(editItem.simType) ? editItem.simType[0] || "" : editItem.simType || "",
+          color: editItem.color || "",
+          ram: Array.isArray(editItem.ram) ? editItem.ram[0] || "" : editItem.ram || "",
+          storage: Array.isArray(editItem.storage) ? editItem.storage[0] || "" : editItem.storage || "",
+          condition: editItem.condition || "",
+          price: editItem.price || 0,
+          stock: editItem.stock || 0,
+          country: editItem.country || "",
+          moq: editItem.moq || 0,
+          isNegotiable: editItem.isNegotiable || false,
+          isFlashDeal: editItem.isFlashDeal === true || editItem.isFlashDeal === "true" || false,
           expiryTime: editItem.expiryTime || "",
         });
       } else {
         setFormData({
-          skuFamilyId: "",
-          simType: [],
+          specification: "",
+          simType: "",
           color: "",
-          ram: [],
-          storage: [],
+          ram: "",
+          storage: "",
           condition: "",
           price: 0,
           stock: 0,
           country: "",
           moq: 0,
           isNegotiable: false,
-          isFlashDeal: "",
+          isFlashDeal: false,
           expiryTime: "",
         });
       }
@@ -122,15 +127,24 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }));
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof FormData) => {
-    const { value, checked } = e.target;
-    setFormData((prev) => {
-      const current = prev[field] as string[];
-      const updated = checked
-        ? [...current, value]
-        : current.filter((item) => item !== value);
-      return { ...prev, [field]: updated };
-    });
+  const loadOptions = async (inputValue: string) => {
+    try {
+      const res = await ProductService.listByName(inputValue);
+      const specs = res?.data?.specs || res?.data || [];
+      return specs.map((s: { _id: string; name: string }) => ({
+        value: s._id,
+        label: s.name,
+      }));
+    } catch (error) {
+      return [];
+    }
+  };
+
+  const handleSpecChange = (selectedOption: { value: string; label: string } | null) => {
+    setFormData((prev) => ({
+      ...prev,
+      specification: selectedOption ? selectedOption.label : "",
+    }));
   };
 
   const handleDateChange = (date: Date | null) => {
@@ -151,8 +165,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.skuFamilyId) {
-      alert("Please enter a SKU Family ID");
+    if (!formData.specification) {
+      alert("Please select a Specification");
       return;
     }
     if (!formData.expiryTime) {
@@ -169,8 +183,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 transition-opacity duration-300">
-      <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-[800px] max-h-[88vh] overflow-y-auto transform transition-all duration-300 scale-100">
-        {/* Close Icon */}
+      <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-[800px] max-h-[95vh] overflow-y-auto transform transition-all duration-300 scale-100">
         <button
           type="button"
           onClick={onClose}
@@ -194,20 +207,65 @@ const ProductModal: React.FC<ProductModalProps> = ({
           {title}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* SKU Family ID and Country Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
                 SKU Family ID
               </label>
-              <input
-                type="text"
-                name="skuFamilyId"
-                value={formData.skuFamilyId}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                placeholder="Enter SKU Family ID"
-                required
+              <AsyncSelect
+                cacheOptions
+                defaultOptions
+                loadOptions={loadOptions}
+                value={formData.specification ? { value: formData.specification, label: formData.specification } : null}
+                onChange={handleSpecChange}
+                placeholder="Search SKU Family ID"
+                isSearchable
+                className="text-gray-800 dark:text-gray-200"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#F9FAFB',
+                    borderColor: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB',
+                    borderRadius: '0.5rem',
+                    padding: '0.375rem 0.75rem',
+                    height: '48px',
+                    minHeight: '48px',
+                    '&:hover': {
+                      borderColor: document.documentElement.classList.contains('dark') ? '#4B5563' : '#D1D5DB',
+                    },
+                    boxShadow: 'none',
+                  }),
+                  input: (base) => ({
+                    ...base,
+                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827',
+                    padding: 0,
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#FFFFFF',
+                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827',
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? document.documentElement.classList.contains('dark') ? '#2563EB' : '#3B82F6'
+                      : state.isFocused
+                      ? document.documentElement.classList.contains('dark') ? '#374151' : '#F3F4F6'
+                      : document.documentElement.classList.contains('dark') ? '#1F2937' : '#FFFFFF',
+                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827',
+                    '&:hover': {
+                      backgroundColor: document.documentElement.classList.contains('dark') ? '#374151' : '#F3F4F6',
+                    },
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827',
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280',
+                  }),
+                }}
               />
             </div>
             <div>
@@ -233,28 +291,27 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          {/* SIM Type and Color Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
                 SIM Type
               </label>
-              <div className="space-y-3">
+              <select
+                name="simType"
+                value={formData.simType}
+                onChange={handleInputChange}
+                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                required
+              >
+                <option value="" disabled>
+                  Select SIM Type
+                </option>
                 {simOptions.map((option) => (
-                  <div key={option} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      value={option}
-                      checked={formData.simType.includes(option)}
-                      onChange={(e) => handleCheckboxChange(e, 'simType')}
-                      className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
-                    />
-                    <span className="ml-3 text-base text-gray-950 dark:text-gray-200">
-                      {option}
-                    </span>
-                  </div>
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
             <div>
               <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
@@ -279,53 +336,51 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          {/* RAM and Storage Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
                 RAM
               </label>
-              <div className="space-y-3">
+              <select
+                name="ram"
+                value={formData.ram}
+                onChange={handleInputChange}
+                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                required
+              >
+                <option value="" disabled>
+                  Select RAM
+                </option>
                 {ramOptions.map((option) => (
-                  <div key={option} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      value={option}
-                      checked={formData.ram.includes(option)}
-                      onChange={(e) => handleCheckboxChange(e, 'ram')}
-                      className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
-                    />
-                    <span className="ml-3 text-base text-gray-950 dark:text-gray-200">
-                      {option}
-                    </span>
-                  </div>
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
             <div>
               <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
                 Storage
               </label>
-              <div className="space-y-3">
+              <select
+                name="storage"
+                value={formData.storage}
+                onChange={handleInputChange}
+                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                required
+              >
+                <option value="" disabled>
+                  Select Storage
+                </option>
                 {storageOptions.map((option) => (
-                  <div key={option} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      value={option}
-                      checked={formData.storage.includes(option)}
-                      onChange={(e) => handleCheckboxChange(e, 'storage')}
-                      className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
-                    />
-                    <span className="ml-3 text-base  text-gray-950 dark:text-gray-200">
-                      {option}
-                    </span>
-                  </div>
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
           </div>
 
-          {/* Condition and Price Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
@@ -366,7 +421,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          {/* Stock and MOQ Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
@@ -400,7 +454,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          {/* Negotiable, Flash Deal, and Expiry Time Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             <div className="flex items-center">
               <input
@@ -418,13 +471,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <input
                 type="checkbox"
                 name="isFlashDeal"
-                checked={formData.isFlashDeal === "true"}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    isFlashDeal: e.target.checked ? "true" : "",
-                  }))
-                }
+                checked={formData.isFlashDeal}
+                onChange={handleInputChange}
                 className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
               />
               <label className="ml-3 text-base font-medium text-gray-950 dark:text-gray-200">
@@ -452,7 +500,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="flex justify-end gap-4 pt-6">
             <button
               type="button"
