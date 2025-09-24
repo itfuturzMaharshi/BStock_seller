@@ -27,6 +27,8 @@ interface Product {
 
 interface FormData {
   specification: string;
+  skuFamilyId?: string;
+  specificationName?: string;
   simType: string;
   color: string;
   ram: string;
@@ -36,6 +38,7 @@ interface FormData {
   stock: number | string;
   country: string;
   moq: number | string;
+  purchaseType: string;
   isNegotiable: boolean;
   isFlashDeal: boolean;
   expiryTime: string;
@@ -56,6 +59,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<FormData>({
     specification: "",
+    skuFamilyId: "",
+    specificationName: "",
     simType: "",
     color: "",
     ram: "",
@@ -65,11 +70,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
     stock: 0,
     country: "",
     moq: 0,
+    purchaseType: "partial",
     isNegotiable: false,
     isFlashDeal: false,
     expiryTime: "",
   });
   const [dateError, setDateError] = useState<string | null>(null);
+  const [moqError, setMoqError] = useState<string | null>(null);
 
   const colorOptions = ["Graphite", "Silver", "Gold", "Sierra Blue", "Mixed"];
   const countryOptions = ["Hongkong", "Dubai", "Singapore"];
@@ -81,24 +88,52 @@ const ProductModal: React.FC<ProductModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       if (editItem) {
+        const fromListName = (editItem as any)?.name as string | undefined;
+        const fromListId = (editItem as any)?.skuFamilyId as string | undefined;
+        const specName = fromListName ?? (
+          typeof editItem.specification === "object"
+            ? editItem.specification?.name || ""
+            : editItem.specification || ""
+        );
+        const specId = fromListId ?? (
+          typeof editItem.specification === "object"
+            ? editItem.specification?._id || ""
+            : ""
+        );
         setFormData({
-          specification: editItem.specification?.name || editItem.specification || "",
-          simType: Array.isArray(editItem.simType) ? editItem.simType[0] || "" : editItem.simType || "",
+          specification: specName,
+          skuFamilyId: specId,
+          specificationName: specName,
+          simType: Array.isArray(editItem.simType)
+            ? editItem.simType[0] || ""
+            : editItem.simType || "",
           color: editItem.color || "",
-          ram: Array.isArray(editItem.ram) ? editItem.ram[0] || "" : editItem.ram || "",
-          storage: Array.isArray(editItem.storage) ? editItem.storage[0] || "" : editItem.storage || "",
+          ram: Array.isArray(editItem.ram)
+            ? editItem.ram[0] || ""
+            : editItem.ram || "",
+          storage: Array.isArray(editItem.storage)
+            ? editItem.storage[0] || ""
+            : editItem.storage || "",
           condition: editItem.condition || "",
           price: editItem.price || 0,
           stock: editItem.stock || 0,
           country: editItem.country || "",
           moq: editItem.moq || 0,
-          isNegotiable: editItem.isNegotiable || false,
-          isFlashDeal: editItem.isFlashDeal === true || editItem.isFlashDeal === "true" || false,
+          purchaseType:
+            String((editItem as any)?.purchaseType || "partial")
+              .trim()
+              .toLowerCase() === "full"
+              ? "full"
+              : "partial",
+          isNegotiable: !!editItem.isNegotiable,
+          isFlashDeal: !!editItem.isFlashDeal,
           expiryTime: editItem.expiryTime || "",
         });
       } else {
         setFormData({
           specification: "",
+          skuFamilyId: "",
+          specificationName: "",
           simType: "",
           color: "",
           ram: "",
@@ -108,6 +143,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           stock: 0,
           country: "",
           moq: 0,
+          purchaseType: "partial",
           isNegotiable: false,
           isFlashDeal: false,
           expiryTime: "",
@@ -121,10 +157,100 @@ const ProductModal: React.FC<ProductModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : type === "number" ? parseFloat(value) || 0 : value,
-    }));
+    setFormData((previous) => {
+      let updatedValue: any;
+      if (type === "checkbox") {
+        updatedValue = checked;
+      } else if (type === "number") {
+        updatedValue = parseFloat(value) || 0;
+      } else {
+        updatedValue = value;
+      }
+
+      // Normalize purchaseType strictly to 'full' or 'partial'
+      if (name === "purchaseType") {
+        updatedValue = String(updatedValue).trim().toLowerCase() === "full" ? "full" : "partial";
+      }
+
+      let next = { ...previous, [name]: updatedValue } as FormData;
+
+      // If switching to full purchase, align MOQ to Stock
+      if (name === "purchaseType" && updatedValue === "full") {
+        next.moq = Number(previous.stock) || 0;
+      }
+      // If stock changes while full, keep MOQ in sync
+      if (name === "stock" && previous.purchaseType === "full") {
+        const numericStock =
+          typeof updatedValue === "number"
+            ? updatedValue
+            : parseFloat(String(updatedValue)) || 0;
+        next.moq = numericStock;
+      }
+
+      const numericStock =
+        parseFloat(String(name === "stock" ? updatedValue : previous.stock)) ||
+        0;
+      const numericMoq =
+        parseFloat(String(name === "moq" ? updatedValue : previous.moq)) || 0;
+      const purchaseType = String(
+        name === "purchaseType" ? updatedValue : previous.purchaseType
+      );
+      if (purchaseType === "partial") {
+        if (numericMoq > numericStock) {
+          setMoqError("MOQ must be less than or equal to Stock");
+        } else {
+          setMoqError(null);
+        }
+      } else {
+        setMoqError(null);
+      }
+
+      return next;
+    });
+  };
+
+  // Ensure numeric-only text input for price/stock/moq
+  const handleNumericChange = (
+    name: "price" | "stock" | "moq",
+    e: React.ChangeEvent<HTMLInputElement>,
+    allowDecimal: boolean
+  ) => {
+    let value = e.target.value;
+
+    if (allowDecimal) {
+      value = value.replace(/[^0-9.]/g, "");
+      const parts = value.split(".");
+      if (parts.length > 2) {
+        value = parts[0] + "." + parts.slice(1).join("").replace(/\./g, "");
+      }
+    } else {
+      value = value.replace(/[^0-9]/g, "");
+    }
+
+    setFormData((previous) => {
+      const next: FormData = { ...previous, [name]: value } as FormData;
+
+      if (name === "stock" && previous.purchaseType === "full") {
+        const numeric = value === "" ? 0 : parseFloat(value) || 0;
+        next.moq = numeric;
+      }
+
+      const numericStock =
+        parseFloat(String(name === "stock" ? value : previous.stock)) || 0;
+      const numericMoq =
+        parseFloat(String(name === "moq" ? value : previous.moq)) || 0;
+      if (previous.purchaseType === "partial") {
+        if (numericMoq > numericStock) {
+          setMoqError("MOQ must be less than or equal to Stock");
+        } else {
+          setMoqError(null);
+        }
+      } else {
+        setMoqError(null);
+      }
+
+      return next;
+    });
   };
 
   const loadOptions = async (inputValue: string) => {
@@ -140,10 +266,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
-  const handleSpecChange = (selectedOption: { value: string; label: string } | null) => {
+  const handleSpecChange = (
+    selectedOption: { value: string; label: string } | null
+  ) => {
     setFormData((prev) => ({
       ...prev,
       specification: selectedOption ? selectedOption.label : "",
+      specificationName: selectedOption ? selectedOption.label : "",
+      skuFamilyId: selectedOption ? selectedOption.value : "",
     }));
   };
 
@@ -165,7 +295,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.specification) {
+    if (!formData.skuFamilyId) {
       alert("Please select a Specification");
       return;
     }
@@ -173,7 +303,27 @@ const ProductModal: React.FC<ProductModalProps> = ({
       setDateError("Expiry time is required");
       return;
     }
-    onSave(formData);
+    const numericStock = parseFloat(String(formData.stock)) || 0;
+    const numericMoq = parseFloat(String(formData.moq)) || 0;
+    if (
+      String(formData.purchaseType) === "partial" &&
+      numericMoq > numericStock
+    ) {
+      setMoqError("MOQ must be less than or equal to Stock");
+      return;
+    }
+    const normalizedPurchaseType =
+      formData.purchaseType?.toLowerCase() === "full" ? "full" : "partial";
+      console.log(normalizedPurchaseType);
+      
+    const payload: FormData = {
+      ...formData,
+      purchaseType: normalizedPurchaseType,
+
+      specification: formData.specificationName || formData.specification || "",
+      skuFamilyId: formData.skuFamilyId || "",
+    };
+    onSave(payload);
     onClose();
   };
 
@@ -216,7 +366,15 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 cacheOptions
                 defaultOptions
                 loadOptions={loadOptions}
-                value={formData.specification ? { value: formData.specification, label: formData.specification } : null}
+                value={
+                  formData.skuFamilyId
+                    ? {
+                        value: String(formData.skuFamilyId),
+                        label:
+                          formData.specificationName || formData.specification,
+                      }
+                    : null
+                }
                 onChange={handleSpecChange}
                 placeholder="Search SKU Family ID"
                 isSearchable
@@ -224,46 +382,79 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 styles={{
                   control: (base) => ({
                     ...base,
-                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#F9FAFB',
-                    borderColor: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB',
-                    borderRadius: '0.5rem',
-                    padding: '0.375rem 0.75rem',
-                    height: '48px',
-                    minHeight: '48px',
-                    '&:hover': {
-                      borderColor: document.documentElement.classList.contains('dark') ? '#4B5563' : '#D1D5DB',
+                    backgroundColor:
+                      document.documentElement.classList.contains("dark")
+                        ? "#1F2937"
+                        : "#F9FAFB",
+                    borderColor: document.documentElement.classList.contains(
+                      "dark"
+                    )
+                      ? "#374151"
+                      : "#E5E7EB",
+                    borderRadius: "0.5rem",
+                    padding: "0.375rem 0.75rem",
+                    height: "48px",
+                    minHeight: "48px",
+                    "&:hover": {
+                      borderColor: document.documentElement.classList.contains(
+                        "dark"
+                      )
+                        ? "#4B5563"
+                        : "#D1D5DB",
                     },
-                    boxShadow: 'none',
+                    boxShadow: "none",
                   }),
                   input: (base) => ({
                     ...base,
-                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827',
+                    color: document.documentElement.classList.contains("dark")
+                      ? "#E5E7EB"
+                      : "#111827",
                     padding: 0,
                   }),
                   menu: (base) => ({
                     ...base,
-                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#FFFFFF',
-                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827',
+                    backgroundColor:
+                      document.documentElement.classList.contains("dark")
+                        ? "#1F2937"
+                        : "#FFFFFF",
+                    color: document.documentElement.classList.contains("dark")
+                      ? "#E5E7EB"
+                      : "#111827",
                   }),
                   option: (base, state) => ({
                     ...base,
                     backgroundColor: state.isSelected
-                      ? document.documentElement.classList.contains('dark') ? '#2563EB' : '#3B82F6'
+                      ? document.documentElement.classList.contains("dark")
+                        ? "#2563EB"
+                        : "#3B82F6"
                       : state.isFocused
-                      ? document.documentElement.classList.contains('dark') ? '#374151' : '#F3F4F6'
-                      : document.documentElement.classList.contains('dark') ? '#1F2937' : '#FFFFFF',
-                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827',
-                    '&:hover': {
-                      backgroundColor: document.documentElement.classList.contains('dark') ? '#374151' : '#F3F4F6',
+                      ? document.documentElement.classList.contains("dark")
+                        ? "#374151"
+                        : "#F3F4F6"
+                      : document.documentElement.classList.contains("dark")
+                      ? "#1F2937"
+                      : "#FFFFFF",
+                    color: document.documentElement.classList.contains("dark")
+                      ? "#E5E7EB"
+                      : "#111827",
+                    "&:hover": {
+                      backgroundColor:
+                        document.documentElement.classList.contains("dark")
+                          ? "#374151"
+                          : "#F3F4F6",
                     },
                   }),
                   singleValue: (base) => ({
                     ...base,
-                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827',
+                    color: document.documentElement.classList.contains("dark")
+                      ? "#E5E7EB"
+                      : "#111827",
                   }),
                   placeholder: (base) => ({
                     ...base,
-                    color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280',
+                    color: document.documentElement.classList.contains("dark")
+                      ? "#9CA3AF"
+                      : "#6B7280",
                   }),
                 }}
               />
@@ -408,17 +599,32 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 Price
               </label>
               <input
-                type="number"
+                type="text"
                 name="price"
                 value={formData.price}
-                onChange={handleInputChange}
+                onChange={(e) => handleNumericChange("price", e, true)}
+                inputMode="decimal"
                 className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                 placeholder="Enter Price"
                 required
-                min="0"
-                step="0.01"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
+              Purchase Type
+            </label>
+            <select
+              name="purchaseType"
+              value={formData.purchaseType}
+              onChange={handleInputChange}
+              className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+              required
+            >
+              <option value="partial">Partial</option>
+              <option value="full">Full</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -427,14 +633,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 Stock
               </label>
               <input
-                type="number"
+                type="text"
                 name="stock"
                 value={formData.stock}
-                onChange={handleInputChange}
+                onChange={(e) => handleNumericChange("stock", e, false)}
+                inputMode="numeric"
                 className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                 placeholder="Enter Stock Quantity"
                 required
-                min="0"
               />
             </div>
             <div>
@@ -442,15 +648,26 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 MOQ
               </label>
               <input
-                type="number"
+                type="text"
                 name="moq"
                 value={formData.moq}
-                onChange={handleInputChange}
+                onChange={(e) => handleNumericChange("moq", e, false)}
+                inputMode="numeric"
                 className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                 placeholder="Enter Minimum Order Quantity"
                 required
-                min="1"
+                disabled={formData.purchaseType === "full"}
               />
+              {moqError && formData.purchaseType === "partial" && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {moqError}
+                </p>
+              )}
+              {formData.purchaseType === "full" && (
+                <p className="mt-1 text-sm text-gray-500">
+                  MOQ equals Stock for Full purchase type.
+                </p>
+              )}
             </div>
           </div>
 
@@ -484,7 +701,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 Expiry Time
               </label>
               <DatePicker
-                selected={formData.expiryTime ? new Date(formData.expiryTime) : null}
+                selected={
+                  formData.expiryTime ? new Date(formData.expiryTime) : null
+                }
                 onChange={handleDateChange}
                 showTimeSelect
                 timeFormat="HH:mm"
@@ -495,7 +714,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 required
               />
               {dateError && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{dateError}</p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {dateError}
+                </p>
               )}
             </div>
           </div>
@@ -511,7 +732,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <button
               type="submit"
               className="px-6 py-2.5 bg-[#0071E0] text-white rounded-lg hover:bg-blue-600 transition duration-200 transform hover:scale-105"
-              disabled={!!dateError}
+              disabled={!!dateError || !!moqError}
             >
               {editItem ? "Update Product" : "Create Product"}
             </button>
