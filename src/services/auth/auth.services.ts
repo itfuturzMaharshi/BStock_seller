@@ -16,6 +16,7 @@ export interface AuthResponse {
   data?: {
     token?: string;
     customer?: User;
+    seller?: any;
   };
 }
 
@@ -33,6 +34,29 @@ export interface LoginRequest {
   password?: string;
   socialId?: string;
   platformName?: string;
+}
+
+export interface ProfileData {
+  businessName?: string;
+  country?: string;
+  address?: string;
+  name?: string;
+  email?: string;
+  mobileNumber?: string;
+  logo?: File | string | null;
+  certificate?: File | string | null;
+  profileImage?: File | string | null;
+}
+
+export interface ProfileResponse<T = any> {
+  status: number;
+  message: string;
+  data?: T;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export class EmailNotVerifiedError extends Error {
@@ -53,7 +77,6 @@ function clearSession(): void {
 }
 
 export class AuthService {
-  // Register a new seller
   static register = async (userData: RegisterRequest): Promise<AuthResponse> => {
     const baseUrl = env.baseUrl;
     const url = `${baseUrl}/api/seller/register`;
@@ -69,10 +92,8 @@ export class AuthService {
     }
   };
 
-  // Resend verification email
   static resendVerificationEmail = async (email: string): Promise<AuthResponse> => {
     const baseUrl = env.baseUrl;
-    // Prefer configured paths first, then try some common guesses
     const candidatePaths = [
       ...env.resendVerificationPaths,
       '/api/seller/verify-email/resend',
@@ -85,14 +106,12 @@ export class AuthService {
     let lastError: any = null;
     for (const path of candidatePaths) {
       const url = `${baseUrl}${path}`;
-      // Try POST first
       try {
         const res = await api.post(url, { email });
         const data: AuthResponse = res.data;
         toastHelper.showTost(data.message || 'Verification email sent', 'success');
         return data;
       } catch (postErr: any) {
-        // Try GET as a fallback regardless of error status
         try {
           const getUrl = `${url}?email=${encodeURIComponent(email)}`;
           const res = await api.get(getUrl);
@@ -101,7 +120,6 @@ export class AuthService {
           return data;
         } catch (getErr: any) {
           lastError = getErr || postErr;
-          // Move to next candidate path
           continue;
         }
       }
@@ -112,7 +130,6 @@ export class AuthService {
     throw new Error(fallbackMessage);
   };
 
-  // Verify email for seller
   static verifyEmail = async (token: string): Promise<AuthResponse> => {
     const baseUrl = env.baseUrl;
     const url = `${baseUrl}/api/seller/verify-email/${token}`;
@@ -128,7 +145,6 @@ export class AuthService {
     }
   };
 
-  // Login seller
   static login = async (loginData: LoginRequest): Promise<AuthResponse> => {
     const baseUrl = env.baseUrl;
     const url = `${baseUrl}/api/seller/login`;
@@ -136,10 +152,10 @@ export class AuthService {
     try {
       const res = await api.post(url, loginData);
       const data: AuthResponse = res.data;
-      const user = data?.data?.customer;
+      const user = (data?.data as any)?.customer || (data?.data as any)?.seller;
       const token = data?.data?.token;
 
-      // If backend indicates email not verified, surface a specific error
+
       const backendMessage = (res as any)?.data?.message?.toString().toLowerCase() || '';
       if (backendMessage.includes('verify') && backendMessage.includes('email')) {
         throw new EmailNotVerifiedError(data.message);
@@ -152,11 +168,9 @@ export class AuthService {
         return data;
       }
 
-      // Non-200 or missing token/user
       const warnMessage = data.message || 'Invalid credentials';
       toastHelper.showTost(warnMessage, 'warning');
       return data;
-
     } catch (err: any) {
       if (err instanceof EmailNotVerifiedError) {
         throw err;
@@ -166,6 +180,87 @@ export class AuthService {
       throw new Error(errorMessage);
     }
   };
+
+  static getProfile = async (): Promise<ProfileResponse<ProfileData>> => {
+    const baseUrl = env.baseUrl;
+    try {
+      const url = `${baseUrl}/api/seller/getProfile`;
+      const res = await api.post(url, {});
+      return res.data as ProfileResponse<ProfileData>;
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load profile';
+      toastHelper.showTost(errorMessage, 'error');
+      throw new Error(errorMessage);
+    }
+  };
+
+  static updateProfile = async (payload: ProfileData): Promise<ProfileResponse> => {
+    const baseUrl = env.baseUrl;
+
+    const form = new FormData();
+    if (payload.businessName !== undefined) form.append('businessName', String(payload.businessName));
+    if (payload.country !== undefined) form.append('country', String(payload.country));
+    if (payload.address !== undefined) form.append('address', String(payload.address));
+    if (payload.name !== undefined) form.append('name', String(payload.name));
+    if (payload.email !== undefined) form.append('email', String(payload.email));
+    if (payload.mobileNumber !== undefined) form.append('mobileNumber', String(payload.mobileNumber));
+
+    if (payload.logo instanceof File) {
+      form.append('logo', payload.logo);
+    } else if (typeof payload.logo === 'string') {
+      form.append('logo', payload.logo);
+    }
+
+    if (payload.certificate instanceof File) {
+      form.append('certificate', payload.certificate);
+    } else if (typeof payload.certificate === 'string') {
+      form.append('certificate', payload.certificate);
+    }
+
+    if (payload.profileImage instanceof File) {
+      form.append('profileImage', payload.profileImage);
+    } else if (typeof payload.profileImage === 'string') {
+      form.append('profileImage', payload.profileImage);
+    }
+
+    try {
+      const url = `${baseUrl}/api/seller/updateBusinessProfile`;
+      const res = await api.post(url, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toastHelper.showTost(res.data?.message || 'Profile updated successfully', 'success');
+      return res.data as ProfileResponse;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to update profile';
+      toastHelper.showTost(errorMessage, 'error');
+      throw new Error(errorMessage);
+    }
+  };
+
+  static changePassword = async (
+    payload: ChangePasswordRequest
+  ): Promise<ProfileResponse> => {
+    const baseUrl = env.baseUrl;
+    try {
+      const url = `${baseUrl}/api/seller/change-password`;
+      const res = await api.post(url, payload);
+      const data: ProfileResponse = res.data;
+
+      console.log('data : ', data)
+
+      if (data.status == 200 && data.data) {
+        toastHelper.showTost(data.message || 'Password changed successfully', 'success');
+        return data.data;
+      } else {
+        console.log('data is null')
+        const errorMessage = data.message || 'Failed to change password';
+        toastHelper.showTost(errorMessage, 'warning');
+        return data.data;
+        // throw new Error(errorMessage);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to change password';
+      console.log('err : ', err)
+      toastHelper.showTost(errorMessage, 'error');
+      throw new Error(errorMessage);
+    }
+  };
 }
-
-
