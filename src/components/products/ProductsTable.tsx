@@ -54,9 +54,10 @@ const ProductsTable: React.FC = () => {
         limit: itemsPerPage,
         search: searchTerm,
       });
-      setProductsData(response.data.docs);
-      setTotalDocs(response.data.totalDocs);
-      setTotalPages(response.data.totalPages);
+      const docs = (response && response.data && Array.isArray(response.data.docs)) ? response.data.docs : [];
+      setProductsData(docs);
+      setTotalDocs(Number(response?.data?.totalDocs) || docs.length || 0);
+      setTotalPages(Number(response?.data?.totalPages) || 1);
     } catch (error) {
       console.error("Failed to fetch products:", error);
       toastHelper.error("Failed to fetch products");
@@ -82,7 +83,10 @@ const ProductsTable: React.FC = () => {
           typeof productData.moq === "string"
             ? parseInt(productData.moq)
             : productData.moq,
-        purchaseType: "partial", // Default as per example
+        purchaseType:
+          String(productData.purchaseType).trim().toLowerCase() === "full"
+            ? "full"
+            : "partial",
       };
 
       if (editProduct && editProduct._id) {
@@ -338,7 +342,7 @@ const ProductsTable: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ) : productsData.length === 0 ? (
+              ) : (Array.isArray(productsData) ? productsData.length === 0 : true) ? (
                 <tr>
                   <td colSpan={10} className="p-12 text-center">
                     <div className="text-gray-500 dark:text-gray-400 text-lg">
@@ -347,7 +351,7 @@ const ProductsTable: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                productsData.map((item: Product, index: number) => (
+                (Array.isArray(productsData) ? productsData : []).map((item: Product, index: number) => (
                   <tr
                     key={item._id || index}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
