@@ -24,26 +24,16 @@ export default function SocketDemo() {
     const handleReceive = (payload: any) => {
       setLog((prev) => [JSON.stringify({ event: 'receiveMessage', payload }), ...prev]);
     };
-    const handleSeller = (payload: any) => {
-      setLog((prev) => [JSON.stringify({ event: 'sellerMessage', payload }), ...prev]);
-    };
-    const handleAdmin = (payload: any) => {
-      setLog((prev) => [JSON.stringify({ event: 'adminMessage', payload }), ...prev]);
-    };
-    const handleCustomer = (payload: any) => {
-      setLog((prev) => [JSON.stringify({ event: 'customerMessage', payload }), ...prev]);
+    const handleUserMessage = (payload: any) => {
+      setLog((prev) => [JSON.stringify({ event: 'userMessage', payload }), ...prev]);
     };
 
     socket.on('receiveMessage', handleReceive);
-    socket.on('sellerMessage', handleSeller);
-    socket.on('adminMessage', handleAdmin);
-    socket.on('customerMessage', handleCustomer);
+    socket.on('userMessage', handleUserMessage);
 
     return () => {
       socket.off('receiveMessage', handleReceive);
-      socket.off('sellerMessage', handleSeller);
-      socket.off('adminMessage', handleAdmin);
-      socket.off('customerMessage', handleCustomer);
+      socket.off('userMessage', handleUserMessage);
     };
   }, [socket]);
 
