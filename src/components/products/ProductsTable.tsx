@@ -113,30 +113,6 @@ const ProductsTable: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (product: Product) => {
-    if (!product._id) return;
-
-    const confirmed = await Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "No, cancel!",
-    });
-
-    if (confirmed.isConfirmed) {
-      try {
-        await ProductService.deleteProduct(product._id);
-        toastHelper.showTost("Product deleted successfully!", "success");
-        fetchProducts();
-      } catch (error) {
-        console.error("Failed to delete product:", error);
-        toastHelper.error("Failed to delete product");
-      }
-    }
-  };
-
   const handleVerify = async (product: Product) => {
     if (!product._id) return;
 
@@ -193,7 +169,7 @@ const ProductsTable: React.FC = () => {
     setSelectedProduct(product);
   };
 
-  const getProductImageSrc = (product: Product): string => {
+  const getProductImageSrc = (): string => {
     return "https://via.placeholder.com/60x60?text=Product";
   };
 
@@ -349,7 +325,7 @@ const ProductsTable: React.FC = () => {
                     >
                       <td className="px-6 py-4">
                         <img
-                          src={getProductImageSrc(item)}
+                          src={getProductImageSrc()}
                           alt={item.specification || "Product"}
                           className="w-12 h-12 object-contain rounded-md border border-gray-200 dark:border-gray-600"
                           onError={(e) => {
@@ -501,7 +477,7 @@ const ProductsTable: React.FC = () => {
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <div className="flex items-center space-x-4">
                 <img
-                  src={getProductImageSrc(selectedProduct)}
+                  src={getProductImageSrc()}
                   alt={selectedProduct.name}
                   className="w-16 h-16 object-contain rounded-lg border border-gray-200 dark:border-gray-600 flex-shrink-0"
                   onError={(e) => {

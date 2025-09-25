@@ -1,21 +1,20 @@
-import { useModal } from "../../hooks/useModal";
 
 interface UserMetaCardProps {
   name: string;
 }
 
-interface ModalContextType {
-  isOpen: boolean;
-  openModal: () => void;
-  closeModal: () => void;
-}
+// interface ModalContextType {
+//   isOpen: boolean;
+//   openModal: () => void;
+//   closeModal: () => void;
+// }
 
 export default function UserMetaCard({ name }: UserMetaCardProps) {
-  const { isOpen, openModal, closeModal }: ModalContextType = useModal();
-  const handleSave = () => {
-    console.log("Saving changes...");
-    closeModal();
-  };
+  // const { isOpen, openModal, closeModal }: ModalContextType = useModal();
+  // const handleSave = () => {
+  //   console.log("Saving changes...");
+  //   closeModal();
+  // };
 
   return (
     <>

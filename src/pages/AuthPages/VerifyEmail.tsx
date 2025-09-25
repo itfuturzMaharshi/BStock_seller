@@ -1,7 +1,6 @@
 import  { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import { AuthService } from "../../services/auth/auth.services";
-import toastHelper from "../../utils/toastHelper";
 import AuthPageLayout from "./AuthPageLayout";
 
 export default function VerifyEmail() {
