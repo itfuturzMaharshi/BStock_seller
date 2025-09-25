@@ -90,16 +90,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
       if (editItem) {
         const fromListName = (editItem as any)?.name as string | undefined;
         const fromListId = (editItem as any)?.skuFamilyId as string | undefined;
-        const specName = fromListName ?? (
-          typeof editItem.specification === "object"
+        const specName =
+          fromListName ??
+          (typeof editItem.specification === "object"
             ? editItem.specification?.name || ""
-            : editItem.specification || ""
-        );
-        const specId = fromListId ?? (
-          typeof editItem.specification === "object"
+            : editItem.specification || "");
+        const specId =
+          fromListId ??
+          (typeof editItem.specification === "object"
             ? editItem.specification?._id || ""
-            : ""
-        );
+            : "");
         setFormData({
           specification: specName,
           skuFamilyId: specId,
@@ -169,7 +169,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
       // Normalize purchaseType strictly to 'full' or 'partial'
       if (name === "purchaseType") {
-        updatedValue = String(updatedValue).trim().toLowerCase() === "full" ? "full" : "partial";
+        updatedValue =
+          String(updatedValue).trim().toLowerCase() === "full"
+            ? "full"
+            : "partial";
       }
 
       let next = { ...previous, [name]: updatedValue } as FormData;
@@ -209,7 +212,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
     });
   };
 
-  // Ensure numeric-only text input for price/stock/moq
   const handleNumericChange = (
     name: "price" | "stock" | "moq",
     e: React.ChangeEvent<HTMLInputElement>,
@@ -314,12 +316,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
     const normalizedPurchaseType =
       formData.purchaseType?.toLowerCase() === "full" ? "full" : "partial";
-      console.log(normalizedPurchaseType);
-      
+    console.log(normalizedPurchaseType);
+
     const payload: FormData = {
       ...formData,
       purchaseType: normalizedPurchaseType,
-
       specification: formData.specificationName || formData.specification || "",
       skuFamilyId: formData.skuFamilyId || "",
     };
@@ -611,20 +612,45 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-              Purchase Type
-            </label>
-            <select
-              name="purchaseType"
-              value={formData.purchaseType}
-              onChange={handleInputChange}
-              className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-              required
-            >
-              <option value="partial">Partial</option>
-              <option value="full">Full</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
+                Purchase Type
+              </label>
+              <select
+                name="purchaseType"
+                value={formData.purchaseType}
+                onChange={handleInputChange}
+                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                required
+              >
+                <option value="partial">Partial</option>
+                <option value="full">Full</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
+                Expiry Time
+              </label>
+              <DatePicker
+                selected={
+                  formData.expiryTime ? new Date(formData.expiryTime) : null
+                }
+                onChange={handleDateChange}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="yyyy-MM-dd HH:mm"
+                placeholderText="Select date and time"
+                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                required
+              />
+              {dateError && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {dateError}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -671,7 +697,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -695,29 +721,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <label className="ml-3 text-base font-medium text-gray-950 dark:text-gray-200">
                 Is Flash Deal
               </label>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Expiry Time
-              </label>
-              <DatePicker
-                selected={
-                  formData.expiryTime ? new Date(formData.expiryTime) : null
-                }
-                onChange={handleDateChange}
-                showTimeSelect
-                timeFormat="HH:mm"
-                timeIntervals={15}
-                dateFormat="yyyy-MM-dd HH:mm"
-                placeholderText="Select date and time"
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              />
-              {dateError && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {dateError}
-                </p>
-              )}
             </div>
           </div>
 
