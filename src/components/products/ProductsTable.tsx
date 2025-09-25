@@ -55,7 +55,10 @@ const ProductsTable: React.FC = () => {
         limit: itemsPerPage,
         search: searchTerm,
       });
-      const docs = (response && response.data && Array.isArray(response.data.docs)) ? response.data.docs : [];
+      const docs =
+        response && response.data && Array.isArray(response.data.docs)
+          ? response.data.docs
+          : [];
       setProductsData(docs);
       setTotalDocs(Number(response?.data?.totalDocs) || docs.length || 0);
       setTotalPages(Number(response?.data?.totalPages) || 1);
@@ -234,6 +237,9 @@ const ProductsTable: React.FC = () => {
     }
   };
 
+  const placeholderImage =
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMmyTPv4M5fFPvYLrMzMQcPD_VO34ByNjouQ&s";
+
   return (
     <div className="p-4 max-w-[calc(100vw-360px)] mx-auto">
       {/* Table Container */}
@@ -324,7 +330,9 @@ const ProductsTable: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ) : (Array.isArray(productsData) ? productsData.length === 0 : true) ? (
+              ) : (
+                  Array.isArray(productsData) ? productsData.length === 0 : true
+                ) ? (
                 <tr>
                   <td colSpan={10} className="p-12 text-center">
                     <div className="text-gray-500 dark:text-gray-400 text-lg">
@@ -333,80 +341,86 @@ const ProductsTable: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                (Array.isArray(productsData) ? productsData : []).map((item: Product, index: number) => (
-                  <tr
-                    key={item._id || index}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <img
-                        src={getProductImageSrc(item)}
-                        alt={item.specification || "Product"}
-                        className="w-12 h-12 object-contain rounded-md border border-gray-200 dark:border-gray-600"
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {item.name}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.simType}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.color}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.ram}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.storage}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      ${formatPrice(item.price)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.country}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-center">
-                      {getStatusBadge(item)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-center">
-                      <div className="flex items-center justify-center gap-3">
-                        <button
-                          onClick={() => handleView(item)}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                          title="View"
-                        >
-                          <i className="fas fa-eye"></i>
-                        </button>
-                        {item.canVerify && (
+                (Array.isArray(productsData) ? productsData : []).map(
+                  (item: Product, index: number) => (
+                    <tr
+                      key={item._id || index}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <img
+                          src={getProductImageSrc(item)}
+                          alt={item.specification || "Product"}
+                          className="w-12 h-12 object-contain rounded-md border border-gray-200 dark:border-gray-600"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src =
+                              placeholderImage;
+                          }}
+                        />
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
+                        {item.name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.simType}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.color}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.ram}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.storage}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        ${formatPrice(item.price)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.country}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-center">
+                        {getStatusBadge(item)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-center">
+                        <div className="flex items-center justify-center gap-3">
                           <button
-                            onClick={() => handleVerify(item)}
-                            className="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                            title="Verify"
+                            onClick={() => handleView(item)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title="View"
                           >
-                            <i className="fas fa-check"></i>
+                            <i className="fas fa-eye"></i>
                           </button>
-                        )}
-                        {item.canApprove && (
+                          {item.canVerify && (
+                            <button
+                              onClick={() => handleVerify(item)}
+                              className="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
+                              title="Verify"
+                            >
+                              <i className="fas fa-check"></i>
+                            </button>
+                          )}
+                          {item.canApprove && (
+                            <button
+                              onClick={() => handleApprove(item)}
+                              className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
+                              title="Approve"
+                            >
+                              <i className="fas fa-thumbs-up"></i>
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleApprove(item)}
-                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-                            title="Approve"
+                            onClick={() => handleEdit(item)}
+                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                            title="Edit"
                           >
-                            <i className="fas fa-thumbs-up"></i>
+                            <i className="fas fa-edit"></i>
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-                          title="Edit"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                )
               )}
             </tbody>
           </table>
@@ -475,11 +489,11 @@ const ProductsTable: React.FC = () => {
 
       {/* View-Only Product Modal with Scrollable Content */}
       {selectedProduct && (
-        <div 
+        <div
           className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 transition-opacity duration-300"
           onClick={() => setSelectedProduct(null)}
         >
-          <div 
+          <div
             className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
@@ -490,6 +504,10 @@ const ProductsTable: React.FC = () => {
                   src={getProductImageSrc(selectedProduct)}
                   alt={selectedProduct.name}
                   className="w-16 h-16 object-contain rounded-lg border border-gray-200 dark:border-gray-600 flex-shrink-0"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      placeholderImage;
+                  }}
                 />
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -512,9 +530,7 @@ const ProductsTable: React.FC = () => {
             {/* Scrollable Content */}
             <div className="overflow-y-auto flex-1 p-6">
               {/* Status Badge */}
-              <div className="mb-6">
-                {getStatusBadge(selectedProduct)}
-              </div>
+              <div className="mb-6">{getStatusBadge(selectedProduct)}</div>
 
               {/* Product Information Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -523,7 +539,7 @@ const ProductsTable: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                     Basic Information
                   </h3>
-                  
+
                   {selectedProduct.specification && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -586,16 +602,28 @@ const ProductsTable: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Flash Deal
                       </label>
-                      <p className={`text-sm font-medium bg-gray-50 dark:bg-gray-800 p-3 rounded-md ${selectedProduct.isFlashDeal ? 'text-green-600' : 'text-red-600'}`}>
-                        {selectedProduct.isFlashDeal ? 'Yes' : 'No'}
+                      <p
+                        className={`text-sm font-medium bg-gray-50 dark:bg-gray-800 p-3 rounded-md ${
+                          selectedProduct.isFlashDeal
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {selectedProduct.isFlashDeal ? "Yes" : "No"}
                       </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Negotiable
                       </label>
-                      <p className={`text-sm font-medium bg-gray-50 dark:bg-gray-800 p-3 rounded-md ${selectedProduct.isNegotiable ? 'text-green-600' : 'text-red-600'}`}>
-                        {selectedProduct.isNegotiable ? 'Yes' : 'No'}
+                      <p
+                        className={`text-sm font-medium bg-gray-50 dark:bg-gray-800 p-3 rounded-md ${
+                          selectedProduct.isNegotiable
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {selectedProduct.isNegotiable ? "Yes" : "No"}
                       </p>
                     </div>
                   </div>
@@ -661,8 +689,6 @@ const ProductsTable: React.FC = () => {
                       {formatExpiryTime(selectedProduct.expiryTime)}
                     </p>
                   </div>
-
-               
                 </div>
               </div>
             </div>
