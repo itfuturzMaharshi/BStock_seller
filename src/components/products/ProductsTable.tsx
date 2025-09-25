@@ -9,6 +9,7 @@ import { ProductService } from "../../services/products/products.services";
 interface Product {
   _id: string;
   specification: string;
+  name: string;
   simType: string;
   color: string;
   ram: string;
@@ -25,6 +26,7 @@ interface Product {
   isApproved: boolean;
   canVerify: boolean;
   canApprove: boolean;
+  purchaseType: string;
 }
 
 const ProductsTable: React.FC = () => {
@@ -37,7 +39,6 @@ const ProductsTable: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [totalDocs, setTotalDocs] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const itemsPerPage = 10;
 
@@ -54,7 +55,10 @@ const ProductsTable: React.FC = () => {
         limit: itemsPerPage,
         search: searchTerm,
       });
-      const docs = (response && response.data && Array.isArray(response.data.docs)) ? response.data.docs : [];
+      const docs =
+        response && response.data && Array.isArray(response.data.docs)
+          ? response.data.docs
+          : [];
       setProductsData(docs);
       setTotalDocs(Number(response?.data?.totalDocs) || docs.length || 0);
       setTotalPages(Number(response?.data?.totalPages) || 1);
@@ -68,7 +72,6 @@ const ProductsTable: React.FC = () => {
 
   const handleSave = async (productData: any) => {
     try {
-      // Convert string values to numbers where needed
       const processedData = {
         ...productData,
         price:
@@ -90,17 +93,15 @@ const ProductsTable: React.FC = () => {
       };
 
       if (editProduct && editProduct._id) {
-        // Update existing product
         await ProductService.update({ id: editProduct._id, ...processedData });
         toastHelper.showTost("Product updated successfully!", "success");
       } else {
-        // Create new product
         await ProductService.create(processedData);
         toastHelper.showTost("Product added successfully!", "success");
       }
       setIsModalOpen(false);
       setEditProduct(null);
-      fetchProducts(); // Refresh the list
+      fetchProducts();
     } catch (error) {
       console.error("Failed to save product:", error);
       toastHelper.error("Failed to save product");
@@ -110,11 +111,9 @@ const ProductsTable: React.FC = () => {
   const handleEdit = (product: Product) => {
     setEditProduct(product);
     setIsModalOpen(true);
-    setOpenMenuId(null);
   };
 
   const handleDelete = async (product: Product) => {
-    setOpenMenuId(null);
     if (!product._id) return;
 
     const confirmed = await Swal.fire({
@@ -130,7 +129,7 @@ const ProductsTable: React.FC = () => {
       try {
         await ProductService.deleteProduct(product._id);
         toastHelper.showTost("Product deleted successfully!", "success");
-        fetchProducts(); // Refresh the list
+        fetchProducts();
       } catch (error) {
         console.error("Failed to delete product:", error);
         toastHelper.error("Failed to delete product");
@@ -139,7 +138,6 @@ const ProductsTable: React.FC = () => {
   };
 
   const handleVerify = async (product: Product) => {
-    setOpenMenuId(null);
     if (!product._id) return;
 
     const confirmed = await Swal.fire({
@@ -156,7 +154,7 @@ const ProductsTable: React.FC = () => {
         const result = await ProductService.verifyProduct(product._id);
         if (result !== false) {
           toastHelper.showTost("Product verified successfully!", "success");
-          fetchProducts(); // Refresh the list only if successful
+          fetchProducts();
         }
       } catch (error) {
         console.error("Failed to verify product:", error);
@@ -166,7 +164,6 @@ const ProductsTable: React.FC = () => {
   };
 
   const handleApprove = async (product: Product) => {
-    setOpenMenuId(null);
     if (!product._id) return;
 
     const confirmed = await Swal.fire({
@@ -183,7 +180,7 @@ const ProductsTable: React.FC = () => {
         const result = await ProductService.approveProduct(product._id);
         if (result !== false) {
           toastHelper.showTost("Product approved successfully!", "success");
-          fetchProducts(); // Refresh the list only if successful
+          fetchProducts();
         }
       } catch (error) {
         console.error("Failed to approve product:", error);
@@ -194,19 +191,12 @@ const ProductsTable: React.FC = () => {
 
   const handleView = (product: Product) => {
     setSelectedProduct(product);
-    setOpenMenuId(null);
   };
 
-  const toggleMenu = (id: string) => {
-    setOpenMenuId(openMenuId === id ? null : id);
-  };
-
-  // Prefer the first image from populated skuFamily when available
   const getProductImageSrc = (product: Product): string => {
     return "https://via.placeholder.com/60x60?text=Product";
   };
 
-  // Helper function to safely format price
   const formatPrice = (price: number | string): string => {
     if (typeof price === "string") {
       const num = parseFloat(price);
@@ -215,42 +205,40 @@ const ProductsTable: React.FC = () => {
     return price.toFixed(2);
   };
 
-  // Format expiryTime for display
   const formatExpiryTime = (expiryTime: string): string => {
     if (!expiryTime) return "-";
     try {
       const date = new Date(expiryTime);
-      return format(date, "yyyy-MM-dd HH:mm");
+      return format(date, "MMM dd, yyyy");
     } catch {
       return "-";
     }
   };
 
-  // Get status badge for product
   const getStatusBadge = (product: Product) => {
     if (product.isApproved) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-          <i className="fas fa-check-circle mr-1"></i>
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700 border border-green-200">
           Approved
         </span>
       );
     } else if (product.isVerified) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-          <i className="fas fa-clock mr-1"></i>
-          Under Approval
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
+          Pending Approval
         </span>
       );
     } else {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-          <i className="fas fa-exclamation-circle mr-1"></i>
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-100 text-red-700 border border-red-200">
           Under Verification
         </span>
       );
     }
   };
+
+  const placeholderImage =
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMmyTPv4M5fFPvYLrMzMQcPD_VO34ByNjouQ&s";
 
   return (
     <div className="p-4 max-w-[calc(100vw-360px)] mx-auto">
@@ -342,7 +330,9 @@ const ProductsTable: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ) : (Array.isArray(productsData) ? productsData.length === 0 : true) ? (
+              ) : (
+                  Array.isArray(productsData) ? productsData.length === 0 : true
+                ) ? (
                 <tr>
                   <td colSpan={10} className="p-12 text-center">
                     <div className="text-gray-500 dark:text-gray-400 text-lg">
@@ -351,103 +341,86 @@ const ProductsTable: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                (Array.isArray(productsData) ? productsData : []).map((item: Product, index: number) => (
-                  <tr
-                    key={item._id || index}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <img
-                        src={getProductImageSrc(item)}
-                        alt={item.specification || "Product"}
-                        className="w-12 h-12 object-contain rounded-md border border-gray-200 dark:border-gray-600"
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {item.specification}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.simType}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.color}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.ram}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.storage}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      ${formatPrice(item.price)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {item.country}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-center">
-                      {getStatusBadge(item)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-center relative">
-                      <button
-                        onClick={() => toggleMenu(item._id)}
-                        className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-                        title="Actions"
-                      >
-                        <i className="fas fa-ellipsis-v"></i>
-                      </button>
-                      {openMenuId === item._id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10">
-                          <ul className="py-1 text-sm text-gray-700 dark:text-gray-200">
-                            <li>
-                              <button
-                                onClick={() => handleView(item)}
-                                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                              >
-                                <i className="fas fa-eye mr-2"></i> View
-                              </button>
-                            </li>
-                            {item.canVerify && (
-                              <li>
-                                <button
-                                  onClick={() => handleVerify(item)}
-                                  className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                                >
-                                  <i className="fas fa-check mr-2"></i> Verify
-                                </button>
-                              </li>
-                            )}
-                            {item.canApprove && (
-                              <li>
-                                <button
-                                  onClick={() => handleApprove(item)}
-                                  className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                                >
-                                  <i className="fas fa-thumbs-up mr-2"></i> Approve
-                                </button>
-                              </li>
-                            )}
-                            <li>
-                              <button
-                                onClick={() => handleEdit(item)}
-                                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                              >
-                                <i className="fas fa-edit mr-2"></i> Edit
-                              </button>
-                            </li>
-                            <li>
-                              <button
-                                onClick={() => handleDelete(item)}
-                                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left text-red-600 dark:text-red-400"
-                              >
-                                <i className="fas fa-trash mr-2"></i> Delete
-                              </button>
-                            </li>
-                          </ul>
+                (Array.isArray(productsData) ? productsData : []).map(
+                  (item: Product, index: number) => (
+                    <tr
+                      key={item._id || index}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <img
+                          src={getProductImageSrc(item)}
+                          alt={item.specification || "Product"}
+                          className="w-12 h-12 object-contain rounded-md border border-gray-200 dark:border-gray-600"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src =
+                              placeholderImage;
+                          }}
+                        />
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
+                        {item.name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.simType}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.color}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.ram}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.storage}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        ${formatPrice(item.price)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.country}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-center">
+                        {getStatusBadge(item)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-center">
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            onClick={() => handleView(item)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title="View"
+                          >
+                            <i className="fas fa-eye"></i>
+                          </button>
+                          {item.canVerify && (
+                            <button
+                              onClick={() => handleVerify(item)}
+                              className="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
+                              title="Verify"
+                            >
+                              <i className="fas fa-check"></i>
+                            </button>
+                          )}
+                          {item.canApprove && (
+                            <button
+                              onClick={() => handleApprove(item)}
+                              className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
+                              title="Approve"
+                            >
+                              <i className="fas fa-thumbs-up"></i>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                            title="Edit"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  )
+                )
               )}
             </tbody>
           </table>
@@ -467,7 +440,6 @@ const ProductsTable: React.FC = () => {
               Previous
             </button>
 
-            {/* Page Numbers */}
             <div className="flex space-x-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 const pageNum = i + 1;
@@ -515,32 +487,210 @@ const ProductsTable: React.FC = () => {
         onSuccess={fetchProducts}
       />
 
-      {/* View Product Popup */}
+      {/* View-Only Product Modal with Scrollable Content */}
       {selectedProduct && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full relative">
-            <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            >
-              <i className="fas fa-times"></i>
-            </button>
-            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Product Details</h2>
-            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <p><strong>Specification:</strong> {selectedProduct.specification}</p>
-              <p><strong>SIM Type:</strong> {selectedProduct.simType}</p>
-              <p><strong>Color:</strong> {selectedProduct.color}</p>
-              <p><strong>RAM:</strong> {selectedProduct.ram}</p>
-              <p><strong>Storage:</strong> {selectedProduct.storage}</p>
-              <p><strong>Condition:</strong> {selectedProduct.condition}</p>
-              <p><strong>Price:</strong> ${formatPrice(selectedProduct.price)}</p>
-              <p><strong>Stock:</strong> {selectedProduct.stock}</p>
-              <p><strong>Country:</strong> {selectedProduct.country}</p>
-              <p><strong>MOQ:</strong> {selectedProduct.moq}</p>
-              <p><strong>Is Negotiable:</strong> {selectedProduct.isNegotiable ? "Yes" : "No"}</p>
-              <p><strong>Is Flash Deal:</strong> {selectedProduct.isFlashDeal ? "Yes" : "No"}</p>
-              <p><strong>Expiry Time:</strong> {formatExpiryTime(selectedProduct.expiryTime)}</p>
-              <p><strong>Status:</strong> {selectedProduct.isApproved ? "Approved" : selectedProduct.isVerified ? "Under Approval" : "Under Verification"}</p>
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 transition-opacity duration-300"
+          onClick={() => setSelectedProduct(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Fixed Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div className="flex items-center space-x-4">
+                <img
+                  src={getProductImageSrc(selectedProduct)}
+                  alt={selectedProduct.name}
+                  className="w-16 h-16 object-contain rounded-lg border border-gray-200 dark:border-gray-600 flex-shrink-0"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      placeholderImage;
+                  }}
+                />
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {selectedProduct.name}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Product Details
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2 flex-shrink-0"
+                title="Close"
+              >
+                <i className="fas fa-times text-xl"></i>
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto flex-1 p-6">
+              {/* Status Badge */}
+              <div className="mb-6">{getStatusBadge(selectedProduct)}</div>
+
+              {/* Product Information Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    Basic Information
+                  </h3>
+
+                  {selectedProduct.specification && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Specification
+                      </label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        {selectedProduct.specification}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      SIM Type
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                      {selectedProduct.simType}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Color
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                      {selectedProduct.color}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        RAM
+                      </label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        {selectedProduct.ram}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Storage
+                      </label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        {selectedProduct.storage}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Condition
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                      {selectedProduct.condition}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Flash Deal
+                      </label>
+                      <p
+                        className={`text-sm font-medium bg-gray-50 dark:bg-gray-800 p-3 rounded-md ${
+                          selectedProduct.isFlashDeal
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {selectedProduct.isFlashDeal ? "Yes" : "No"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Negotiable
+                      </label>
+                      <p
+                        className={`text-sm font-medium bg-gray-50 dark:bg-gray-800 p-3 rounded-md ${
+                          selectedProduct.isNegotiable
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {selectedProduct.isNegotiable ? "Yes" : "No"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    Pricing & Inventory
+                  </h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Price
+                    </label>
+                    <p className="text-lg text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md font-semibold">
+                      ${formatPrice(selectedProduct.price)}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Stock
+                      </label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        {selectedProduct.stock} units
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        MOQ
+                      </label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        {selectedProduct.moq} units
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Country
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                      {selectedProduct.country}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Purchase Type
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md capitalize">
+                      {selectedProduct.purchaseType}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Expiry Date
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                      {formatExpiryTime(selectedProduct.expiryTime)}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
