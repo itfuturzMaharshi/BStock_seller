@@ -26,7 +26,7 @@ export default function SignInForm() {
       const response = await AuthService.login({ email, password });
       if(response.data){
         toastHelper.success("Logged in successfully");
-        navigate("/");
+        navigate("/home");
 
       }
     } catch (error: any) {
