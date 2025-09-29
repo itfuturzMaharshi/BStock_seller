@@ -15,11 +15,11 @@ const navItems: NavItem[] = [
     name: "Dashboard",
     path: "/home",
   },
-  {
-    icon: <i className="fas fa-calendar-alt"></i>,
-    name: "Calendar",
-    path: "/calendar",
-  },
+  // {
+  //   icon: <i className="fas fa-calendar-alt"></i>,
+  //   name: "Calendar",
+  //   path: "/calendar",
+  // },
   {
     icon: <i className="fas fa-box-open"></i>,
     name: "Products",
@@ -217,7 +217,7 @@ const AppSidebar: React.FC = () => {
       className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-4 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
         ${
           isExpanded || isMobileOpen
-            ? "w-[270px]"
+            ? "w-[290px]"
             : isHovered
             ? "w-[270px]"
             : "w-[80px]"
