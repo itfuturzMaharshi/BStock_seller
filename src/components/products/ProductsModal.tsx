@@ -77,7 +77,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   });
   const [dateError, setDateError] = useState<string | null>(null);
   const [moqError, setMoqError] = useState<string | null>(null);
-  const [isLoading , setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const colorOptions = ["Graphite", "Silver", "Gold", "Sierra Blue", "Mixed"];
   const countryOptions = ["Hongkong", "Dubai", "Singapore"];
@@ -302,8 +302,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
       alert("Please select a Specification");
       return;
     }
-    if (!formData.expiryTime) {
-      setDateError("Expiry time is required");
+    if (formData.isFlashDeal && !formData.expiryTime) {
+      setDateError("Expiry time is required for Flash Deal");
       return;
     }
     const numericStock = parseFloat(String(formData.stock)) || 0;
@@ -335,412 +335,434 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 transition-opacity duration-300">
-      <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-[800px] max-h-[95vh] overflow-y-auto transform transition-all duration-300 scale-100">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform duration-200 hover:scale-110"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-8">
-          {title}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                SKU Family ID
-              </label>
-              <AsyncSelect
-                cacheOptions
-                defaultOptions
-                loadOptions={loadOptions}
-                value={
-                  formData.skuFamilyId
-                    ? {
-                        value: String(formData.skuFamilyId),
-                        label:
-                          formData.specificationName || formData.specification,
-                      }
-                    : null
-                }
-                onChange={handleSpecChange}
-                placeholder="Search SKU Family ID"
-                isSearchable
-                className="text-gray-800 dark:text-gray-200"
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    backgroundColor:
-                      document.documentElement.classList.contains("dark")
-                        ? "#1F2937"
-                        : "#F9FAFB",
-                    borderColor: document.documentElement.classList.contains(
-                      "dark"
-                    )
-                      ? "#374151"
-                      : "#E5E7EB",
-                    borderRadius: "0.5rem",
-                    padding: "0.375rem 0.75rem",
-                    height: "48px",
-                    minHeight: "48px",
-                    "&:hover": {
-                      borderColor: document.documentElement.classList.contains(
-                        "dark"
-                      )
-                        ? "#4B5563"
-                        : "#D1D5DB",
-                    },
-                    boxShadow: "none",
-                  }),
-                  input: (base) => ({
-                    ...base,
-                    color: document.documentElement.classList.contains("dark")
-                      ? "#E5E7EB"
-                      : "#111827",
-                    padding: 0,
-                  }),
-                  menu: (base) => ({
-                    ...base,
-                    backgroundColor:
-                      document.documentElement.classList.contains("dark")
-                        ? "#1F2937"
-                        : "#FFFFFF",
-                    color: document.documentElement.classList.contains("dark")
-                      ? "#E5E7EB"
-                      : "#111827",
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    backgroundColor: state.isSelected
-                      ? document.documentElement.classList.contains("dark")
-                        ? "#2563EB"
-                        : "#3B82F6"
-                      : state.isFocused
-                      ? document.documentElement.classList.contains("dark")
-                        ? "#374151"
-                        : "#F3F4F6"
-                      : document.documentElement.classList.contains("dark")
-                      ? "#1F2937"
-                      : "#FFFFFF",
-                    color: document.documentElement.classList.contains("dark")
-                      ? "#E5E7EB"
-                      : "#111827",
-                    "&:hover": {
-                      backgroundColor:
-                        document.documentElement.classList.contains("dark")
-                          ? "#374151"
-                          : "#F3F4F6",
-                    },
-                  }),
-                  singleValue: (base) => ({
-                    ...base,
-                    color: document.documentElement.classList.contains("dark")
-                      ? "#E5E7EB"
-                      : "#111827",
-                  }),
-                  placeholder: (base) => ({
-                    ...base,
-                    color: document.documentElement.classList.contains("dark")
-                      ? "#9CA3AF"
-                      : "#6B7280",
-                  }),
-                }}
-              />
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Country
-              </label>
-              <select
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              >
-                <option value="" disabled>
-                  Select Country
-                </option>
-                {countryOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                SIM Type
-              </label>
-              <select
-                name="simType"
-                value={formData.simType}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              >
-                <option value="" disabled>
-                  Select SIM Type
-                </option>
-                {simOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Color
-              </label>
-              <select
-                name="color"
-                value={formData.color}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              >
-                <option value="" disabled>
-                  Select Color
-                </option>
-                {colorOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                RAM
-              </label>
-              <select
-                name="ram"
-                value={formData.ram}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              >
-                <option value="" disabled>
-                  Select RAM
-                </option>
-                {ramOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Storage
-              </label>
-              <select
-                name="storage"
-                value={formData.storage}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              >
-                <option value="" disabled>
-                  Select Storage
-                </option>
-                {storageOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Condition
-              </label>
-              <select
-                name="condition"
-                value={formData.condition}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              >
-                <option value="" disabled>
-                  Select Condition
-                </option>
-                {conditionOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Price
-              </label>
-              <input
-                type="text"
-                name="price"
-                value={formData.price}
-                onChange={(e) => handleNumericChange("price", e, true)}
-                inputMode="decimal"
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                placeholder="Enter Price"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Purchase Type
-              </label>
-              <select
-                name="purchaseType"
-                value={formData.purchaseType}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              >
-                <option value="partial">Partial</option>
-                <option value="full">Full</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Expiry Time
-              </label>
-              <DatePicker
-                selected={
-                  formData.expiryTime ? new Date(formData.expiryTime) : null
-                }
-                onChange={handleDateChange}
-                showTimeSelect
-                timeFormat="HH:mm"
-                timeIntervals={15}
-                dateFormat="yyyy-MM-dd HH:mm"
-                placeholderText="Select date and time"
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                required
-              />
-              {dateError && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {dateError}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                Stock
-              </label>
-              <input
-                type="text"
-                name="stock"
-                value={formData.stock}
-                onChange={(e) => handleNumericChange("stock", e, false)}
-                inputMode="numeric"
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                placeholder="Enter Stock Quantity"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-950 dark:text-gray-200 mb-2">
-                MOQ
-              </label>
-              <input
-                type="text"
-                name="moq"
-                value={formData.moq}
-                onChange={(e) => handleNumericChange("moq", e, false)}
-                inputMode="numeric"
-                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                placeholder="Enter Minimum Order Quantity"
-                required
-                disabled={formData.purchaseType === "full"}
-              />
-              {moqError && formData.purchaseType === "partial" && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {moqError}
-                </p>
-              )}
-              {formData.purchaseType === "full" && (
-                <p className="mt-1 text-sm text-gray-500">
-                  MOQ equals Stock for Full purchase type.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-6">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="isNegotiable"
-                checked={formData.isNegotiable}
-                onChange={handleInputChange}
-                className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
-              />
-              <label className="ml-3 text-base font-medium text-gray-950 dark:text-gray-200">
-                Is Negotiable
-              </label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="isFlashDeal"
-                checked={formData.isFlashDeal}
-                onChange={handleInputChange}
-                className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition duration-200"
-              />
-              <label className="ml-3 text-base font-medium text-gray-950 dark:text-gray-200">
-                Is Flash Deal
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-4 pt-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-[800px] max-h-[80vh] transform transition-all duration-300 scale-100 flex flex-col">
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-white dark:bg-gray-900 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 rounded-t-xl">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+              {title}
+            </h2>
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-200 transform hover:scale-105"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-transform duration-200 hover:scale-110"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* SKU Family ID, Country, and Sim Type Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  SKU Family ID
+                </label>
+                <AsyncSelect
+                  cacheOptions
+                  defaultOptions
+                  loadOptions={loadOptions}
+                  value={
+                    formData.skuFamilyId
+                      ? {
+                          value: String(formData.skuFamilyId),
+                          label:
+                            formData.specificationName || formData.specification,
+                        }
+                      : null
+                  }
+                  onChange={handleSpecChange}
+                  placeholder="Select SKU Family"
+                  isSearchable
+                  className="text-gray-800 dark:text-gray-200"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      backgroundColor: document.documentElement.classList.contains("dark")
+                        ? "#1F2937"
+                        : "#F9FAFB",
+                      borderColor: document.documentElement.classList.contains("dark")
+                        ? "#374151"
+                        : "#E5E7EB",
+                      borderRadius: "0.5rem",
+                      padding: "0.25rem 0.75rem",
+                      height: "42px",
+                      minHeight: "42px",
+                      fontSize: "0.875rem",
+                      "&:hover": {
+                        borderColor: document.documentElement.classList.contains("dark")
+                          ? "#4B5563"
+                          : "#D1D5DB",
+                      },
+                      boxShadow: "none",
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#E5E7EB"
+                        : "#111827",
+                      padding: 0,
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      backgroundColor: document.documentElement.classList.contains("dark")
+                        ? "#1F2937"
+                        : "#FFFFFF",
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#E5E7EB"
+                        : "#111827",
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? document.documentElement.classList.contains("dark")
+                          ? "#2563EB"
+                          : "#3B82F6"
+                        : state.isFocused
+                        ? document.documentElement.classList.contains("dark")
+                          ? "#374151"
+                          : "#F3F4F6"
+                        : document.documentElement.classList.contains("dark")
+                          ? "#1F2937"
+                          : "#FFFFFF",
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#E5E7EB"
+                        : "#111827",
+                      "&:hover": {
+                        backgroundColor: document.documentElement.classList.contains("dark")
+                          ? "#374151"
+                          : "#F3F4F6",
+                      },
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#E5E7EB"
+                        : "#111827",
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#9CA3AF"
+                        : "#6B7280",
+                    }),
+                  }}
+                  components={{
+                    DropdownIndicator: () => (
+                      <i className="fas fa-chevron-down text-gray-400 text-xs" />
+                    ),
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Country
+                </label>
+                <div className="relative">
+                  <select
+                    name="country"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select Country
+                    </option>
+                    {countryOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  SIM Type
+                </label>
+                <div className="relative">
+                  <select
+                    name="simType"
+                    value={formData.simType}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select SIM Type
+                    </option>
+                    {simOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Color, RAM, and Storage Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Color
+                </label>
+                <div className="relative">
+                  <select
+                    name="color"
+                    value={formData.color}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select Color
+                    </option>
+                    {colorOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  RAM
+                </label>
+                <div className="relative">
+                  <select
+                    name="ram"
+                    value={formData.ram}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select RAM
+                    </option>
+                    {ramOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Storage
+                </label>
+                <div className="relative">
+                  <select
+                    name="storage"
+                    value={formData.storage}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select Storage
+                    </option>
+                    {storageOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Condition, Price, and Stock Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Condition
+                </label>
+                <div className="relative">
+                  <select
+                    name="condition"
+                    value={formData.condition}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select Condition
+                    </option>
+                    {conditionOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Price
+                </label>
+                <input
+                  type="text"
+                  name="price"
+                  value={formData.price}
+                  onChange={(e) => handleNumericChange("price", e, true)}
+                  inputMode="decimal"
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm border-gray-200 dark:border-gray-700"
+                  placeholder="Enter Price"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Stock
+                </label>
+                <input
+                  type="text"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={(e) => handleNumericChange("stock", e, false)}
+                  inputMode="numeric"
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm border-gray-200 dark:border-gray-700"
+                  placeholder="Enter Stock Quantity"
+                />
+              </div>
+            </div>
+
+            {/* MOQ and Purchase Type Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  MOQ
+                </label>
+                <input
+                  type="text"
+                  name="moq"
+                  value={formData.moq}
+                  onChange={(e) => handleNumericChange("moq", e, false)}
+                  inputMode="numeric"
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm border-gray-200 dark:border-gray-700"
+                  placeholder="Enter Minimum Order Quantity"
+                  disabled={formData.purchaseType === "full"}
+                />
+                {moqError && formData.purchaseType === "partial" && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {moqError}
+                  </p>
+                )}
+                {formData.purchaseType === "full" && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    MOQ equals Stock for Full purchase type.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Purchase Type
+                </label>
+                <div className="relative">
+                  <select
+                    name="purchaseType"
+                    value={formData.purchaseType}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="partial">Partial</option>
+                    <option value="full">Full</option>
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Is Negotiable, Is Flash Deal, and Expiry Time Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center mt-6">
+                <input
+                  type="checkbox"
+                  name="isNegotiable"
+                  checked={formData.isNegotiable}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition duration-200"
+                />
+                <label className="ml-2 text-sm font-medium text-gray-950 dark:text-gray-200">
+                  Is Negotiable
+                </label>
+              </div>
+              <div className="flex items-center mt-6">
+                <input
+                  type="checkbox"
+                  name="isFlashDeal"
+                  checked={formData.isFlashDeal}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition duration-200"
+                />
+                <label className="ml-2 text-sm font-medium text-gray-950 dark:text-gray-200">
+                  Is Flash Deal
+                </label>
+              </div>
+              {formData.isFlashDeal && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                    Expiry Time
+                  </label>
+                  <DatePicker
+                    selected={
+                      formData.expiryTime ? new Date(formData.expiryTime) : null
+                    }
+                    onChange={handleDateChange}
+                    showTimeSelect
+                    timeFormat="HH:mm"
+                    timeIntervals={15}
+                    dateFormat="yyyy-MM-dd HH:mm"
+                    placeholderText="Select date and time"
+                    className="w-full p-2.5 bg-gray-50 dark:bg-gray-800 border rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm border-gray-200 dark:border-gray-700"
+                  />
+                  {dateError && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      {dateError}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* Sticky Footer */}
+        <div className="sticky bottom-0 bg-white dark:bg-gray-900 p-6 pt-4 border-t border-gray-200 dark:border-gray-700 rounded-b-xl">
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-200 text-sm"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="min-w-[160px] px-6 py-2.5 bg-[#0071E0] text-white rounded-lg hover:bg-blue-600 transition duration-200 transform hover:scale-105 flex items-center justify-center"
+              className="min-w-[160px] px-4 py-2 bg-[#0071E0] text-white rounded-lg hover:bg-blue-600 transition duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               disabled={!!dateError || !!moqError || isLoading}
             >
               {isLoading ? (
                 <svg
-                  className="animate-spin h-5 w-5 text-white"
+                  className="animate-spin h-4 w-4 text-white"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -756,10 +778,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   <path
                     className="opacity-75"
                     fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 
-           0 5.373 0 12h4zm2 5.291A7.962 
-           7.962 0 014 12H0c0 3.042 1.135 
-           5.824 3 7.938l3-2.647z"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
               ) : editItem ? (
@@ -769,7 +788,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               )}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
