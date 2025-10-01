@@ -7,7 +7,8 @@ import ProductModal from "./ProductsModal";
 import { ProductService } from "../../services/products/products.services";
 
 interface Product {
-  _id: string;
+  _id?: string;
+  id?: string;
   specification: string;
   name: string;
   simType: string;
@@ -59,11 +60,12 @@ const ProductsTable: React.FC = () => {
         response && response.data && Array.isArray(response.data.docs)
           ? response.data.docs
           : [];
+      
+      
       setProductsData(docs);
       setTotalDocs(Number(response?.data?.totalDocs) || docs.length || 0);
       setTotalPages(Number(response?.data?.totalPages) || 1);
     } catch (error) {
-      console.error("Failed to fetch products:", error);
       toastHelper.error("Failed to fetch products");
     } finally {
       setLoading(false);
@@ -72,38 +74,58 @@ const ProductsTable: React.FC = () => {
 
   const handleSave = async (productData: any) => {
     try {
-      const processedData = {
-        ...productData,
-        price:
-          typeof productData.price === "string"
-            ? parseFloat(productData.price)
-            : productData.price,
-        stock:
-          typeof productData.stock === "string"
-            ? parseInt(productData.stock)
-            : productData.stock,
-        moq:
-          typeof productData.moq === "string"
-            ? parseInt(productData.moq)
-            : productData.moq,
-        purchaseType:
-          String(productData.purchaseType).trim().toLowerCase() === "full"
-            ? "full"
-            : "partial",
-      };
-
-      if (editProduct && editProduct._id) {
-        await ProductService.update({ id: editProduct._id, ...processedData });
+      // Check if we're in edit mode - handle both _id and id fields
+      const productId = editProduct?._id || editProduct?.id;
+      const isEditMode = Boolean(productId);
+      
+      if (isEditMode && editProduct && productId) {
+        // For update, send all fields that are provided in the form data
+        const updatePayload = {
+          id: productId,
+          specification: productData.specification,
+          skuFamilyId: productData.skuFamilyId,
+          simType: productData.simType,
+          color: productData.color,
+          ram: productData.ram,
+          storage: productData.storage,
+          condition: productData.condition,
+          price: Number(productData.price),
+          stock: Number(productData.stock),
+          country: productData.country,
+          moq: Number(productData.moq),
+          isNegotiable: Boolean(productData.isNegotiable),
+          isFlashDeal: Boolean(productData.isFlashDeal),
+          expiryTime: productData.expiryTime,
+          purchaseType: String(productData.purchaseType).trim().toLowerCase() === "full" ? "full" : "partial"
+        };
+        await ProductService.update(updatePayload);
         toastHelper.showTost("Product updated successfully!", "success");
       } else {
+        // For create, send all required fields
+        const processedData = {
+          skuFamilyId: productData.skuFamilyId,
+          specification: productData.specification,
+          simType: productData.simType,
+          color: productData.color,
+          ram: productData.ram,
+          storage: productData.storage,
+          condition: productData.condition,
+          price: Number(productData.price),
+          stock: Number(productData.stock),
+          country: productData.country,
+          moq: Number(productData.moq),
+          isNegotiable: Boolean(productData.isNegotiable),
+          isFlashDeal: Boolean(productData.isFlashDeal),
+          expiryTime: productData.expiryTime,
+          purchaseType: String(productData.purchaseType).trim().toLowerCase() === "full" ? "full" : "partial"
+        };
         await ProductService.create(processedData);
-        toastHelper.showTost("Product added successfully!", "success");
+        toastHelper.showTost("Product created successfully!", "success");
       }
       setIsModalOpen(false);
       setEditProduct(null);
       fetchProducts();
     } catch (error) {
-      console.error("Failed to save product:", error);
       toastHelper.error("Failed to save product");
     }
   };
@@ -114,7 +136,8 @@ const ProductsTable: React.FC = () => {
   };
 
   const handleVerify = async (product: Product) => {
-    if (!product._id) return;
+    const productId = product._id || product.id;
+    if (!productId) return;
 
     const confirmed = await Swal.fire({
       title: "Verify Product",
@@ -127,20 +150,20 @@ const ProductsTable: React.FC = () => {
 
     if (confirmed.isConfirmed) {
       try {
-        const result = await ProductService.verifyProduct(product._id);
+        const result = await ProductService.verifyProduct(productId);
         if (result !== false) {
           toastHelper.showTost("Product verified successfully!", "success");
           fetchProducts();
         }
       } catch (error) {
-        console.error("Failed to verify product:", error);
         toastHelper.error("Failed to verify product");
       }
     }
   };
 
   const handleApprove = async (product: Product) => {
-    if (!product._id) return;
+    const productId = product._id || product.id;
+    if (!productId) return;
 
     const confirmed = await Swal.fire({
       title: "Approve Product",
@@ -153,13 +176,12 @@ const ProductsTable: React.FC = () => {
 
     if (confirmed.isConfirmed) {
       try {
-        const result = await ProductService.approveProduct(product._id);
+        const result = await ProductService.approveProduct(productId);
         if (result !== false) {
           toastHelper.showTost("Product approved successfully!", "success");
           fetchProducts();
         }
       } catch (error) {
-        console.error("Failed to approve product:", error);
         toastHelper.error("Failed to approve product");
       }
     }
@@ -320,7 +342,7 @@ const ProductsTable: React.FC = () => {
                 (Array.isArray(productsData) ? productsData : []).map(
                   (item: Product, index: number) => (
                     <tr
-                      key={item._id || index}
+                      key={item._id || item.id || index}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
                       <td className="px-6 py-4">

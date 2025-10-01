@@ -4,6 +4,7 @@ import toastHelper from "../../utils/toastHelper";
 
 export interface CreateProductRequest {
   specification: string;
+  skuFamilyId?: string;
   simType: string;
   color: string;
   ram: string;
@@ -15,11 +16,31 @@ export interface CreateProductRequest {
   moq: number;
   isNegotiable: boolean;
   isFlashDeal: boolean;
+  expiryTime?: string;
   purchaseType: string;
 }
 
-export interface GetProductRequest { id: string; }
-export interface UpdateProductRequest { id: string; price?: number; stock?: number; }
+export interface GetProductRequest {
+  id: string;
+}
+export interface UpdateProductRequest {
+  id: string;
+  specification?: string;
+  skuFamilyId?: string;
+  simType?: string;
+  color?: string;
+  ram?: string;
+  storage?: string;
+  condition?: string;
+  price?: number;
+  stock?: number;
+  country?: string;
+  moq?: number;
+  isNegotiable?: boolean;
+  isFlashDeal?: boolean;
+  expiryTime?: string;
+  purchaseType?: string;
+}
 
 export interface ListProductsRequest {
   page: number;
@@ -35,15 +56,43 @@ export interface ApiResponse<T = any> {
 }
 
 export class ProductService {
-  static create = async (payload: CreateProductRequest): Promise<ApiResponse> => {
+  static create = async (
+    payload: CreateProductRequest
+  ): Promise<ApiResponse> => {
     const url = `${env.baseUrl}/api/seller/product/create`;
     try {
-      const res = await api.post(url, payload);
+      // Process numeric values and boolean flags
+      const processedPayload = {
+        skuFamilyId: payload.skuFamilyId || "", 
+        specification: payload.specification,
+        simType: payload.simType,
+        color: payload.color,
+        ram: payload.ram,
+        storage: payload.storage,
+        condition: payload.condition,
+        price: Number(payload.price),
+        stock: Number(payload.stock),
+        country: payload.country,
+        moq: Number(payload.moq),
+        isNegotiable: Boolean(payload.isNegotiable),
+        isFlashDeal: Boolean(payload.isFlashDeal),
+        purchaseType: payload.purchaseType || "partial",
+        expiryTime: payload.isFlashDeal ? payload.expiryTime : undefined,
+      };
+
+      const res = await api.post(url, processedPayload);
+
       const data: ApiResponse = res.data;
-      toastHelper.showTost(data.message || "Product created successfully", "success");
+      toastHelper.showTost(
+        data.message || "Product created successfully",
+        "success"
+      );
       return data;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to create product";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to create product";
       toastHelper.showTost(errorMessage, "error");
       throw new Error(errorMessage);
     }
@@ -56,21 +105,56 @@ export class ProductService {
       const data: ApiResponse = res.data;
       return data;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to get product";
+      const errorMessage =
+        err?.response?.data?.message || err?.message || "Failed to get product";
       toastHelper.showTost(errorMessage, "error");
       throw new Error(errorMessage);
     }
   };
 
-  static update = async (payload: UpdateProductRequest): Promise<ApiResponse> => {
+  static update = async (
+    payload: UpdateProductRequest
+  ): Promise<ApiResponse> => {
     const url = `${env.baseUrl}/api/seller/product/update`;
     try {
-      const res = await api.post(url, payload);
+      // Process payload similar to create method
+      const processedPayload = {
+        id: payload.id,
+        skuFamilyId: payload.skuFamilyId || "", 
+        specification: payload.specification,
+        simType: payload.simType,
+        color: payload.color,
+        ram: payload.ram,
+        storage: payload.storage,
+        condition: payload.condition,
+        price: Number(payload.price),
+        stock: Number(payload.stock),
+        country: payload.country,
+        moq: Number(payload.moq),
+        isNegotiable: Boolean(payload.isNegotiable),
+        isFlashDeal: Boolean(payload.isFlashDeal),
+        purchaseType: payload.purchaseType || "partial",
+        expiryTime: payload.isFlashDeal ? payload.expiryTime : undefined,
+      };
+      
+      // Remove undefined values
+      const cleanPayload = Object.fromEntries(
+        Object.entries(processedPayload).filter(([_, value]) => value !== undefined)
+      );
+      
+      const res = await api.post(url, cleanPayload);
       const data: ApiResponse = res.data;
-      toastHelper.showTost(data.message || "Product updated successfully", "success");
+      toastHelper.showTost(
+        data.message || "Product updated successfully",
+        "success"
+      );
       return data;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to update product";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to update product";
       toastHelper.showTost(errorMessage, "error");
       throw new Error(errorMessage);
     }
@@ -83,20 +167,26 @@ export class ProductService {
       const data: ApiResponse = res.data;
       return data;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to list products";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to list products";
       toastHelper.showTost(errorMessage, "error");
       throw new Error(errorMessage);
     }
   };
 
-  static listByName = async (search: string = ''): Promise<ApiResponse> => {
+  static listByName = async (search: string = ""): Promise<ApiResponse> => {
     const url = `${env.baseUrl}/api/seller/product/listByName`;
     try {
       const res = await api.post(url, { search });
       const data: ApiResponse = res.data;
       return data;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to list by name";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to list by name";
       toastHelper.showTost(errorMessage, "error");
       throw new Error(errorMessage);
     }
@@ -105,30 +195,22 @@ export class ProductService {
   static importExcel = async (file: File): Promise<ApiResponse> => {
     const url = `${env.baseUrl}/api/seller/product/import`;
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
     try {
       const res = await api.post(url, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { "Content-Type": "multipart/form-data" },
       });
       const data: ApiResponse = res.data;
-      toastHelper.showTost(data.message || "Products imported successfully", "success");
+      toastHelper.showTost(
+        data.message || "Products imported successfully",
+        "success"
+      );
       return data;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to import products";
-      toastHelper.showTost(errorMessage, "error");
-      throw new Error(errorMessage);
-    }
-  };
-
-  static deleteProduct = async (id: string): Promise<ApiResponse> => {
-    const url = `${env.baseUrl}/api/seller/product/delete`;
-    try {
-      const res = await api.post(url, { id });
-      const data: ApiResponse = res.data;
-      toastHelper.showTost(data.message || "Product deleted successfully", "success");
-      return data;
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete product";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to import products";
       toastHelper.showTost(errorMessage, "error");
       throw new Error(errorMessage);
     }
@@ -141,7 +223,10 @@ export class ProductService {
       toastHelper.showTost("Product verified successfully", "success");
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to verify product";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to verify product";
       toastHelper.showTost(errorMessage, "error");
       return false;
     }
@@ -154,7 +239,10 @@ export class ProductService {
       toastHelper.showTost("Product approved successfully", "success");
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Failed to approve product";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to approve product";
       toastHelper.showTost(errorMessage, "error");
       return false;
     }

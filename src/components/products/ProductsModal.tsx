@@ -47,7 +47,7 @@ interface FormData {
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newItem: FormData) => void;
+  onSave: (newItem: FormData) => Promise<void>;
   editItem?: Product;
 }
 
@@ -89,6 +89,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       if (editItem) {
+        // In edit mode, preserve the exact identifiers
         const fromListName = (editItem as any)?.name as string | undefined;
         const fromListId = (editItem as any)?.skuFamilyId as string | undefined;
         const specName =
@@ -296,8 +297,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
+    if (e) e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isLoading) return;
+    
     if (!formData.skuFamilyId) {
       alert("Please select a Specification");
       return;
@@ -315,18 +320,26 @@ const ProductModal: React.FC<ProductModalProps> = ({
       setMoqError("MOQ must be less than or equal to Stock");
       return;
     }
-    const normalizedPurchaseType =
-      formData.purchaseType?.toLowerCase() === "full" ? "full" : "partial";
-    console.log(normalizedPurchaseType);
+    
+    try {
+      setIsLoading(true);
+      const normalizedPurchaseType =
+        formData.purchaseType?.toLowerCase() === "full" ? "full" : "partial";
 
-    const payload: FormData = {
-      ...formData,
-      purchaseType: normalizedPurchaseType,
-      specification: formData.specificationName || formData.specification || "",
-      skuFamilyId: formData.skuFamilyId || "",
-    };
-    onSave(payload);
-    onClose();
+      const payload: FormData = {
+        ...formData,
+        purchaseType: normalizedPurchaseType,
+        specification: formData.specificationName || formData.specification || "",
+        skuFamilyId: formData.skuFamilyId || "",
+      };
+      
+      await onSave(payload);
+      // Don't call onClose here - let the parent component handle it after save completes
+    } catch (error) {
+      // Error handling is done in the parent component
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -756,7 +769,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
               Cancel
             </button>
             <button
-              type="submit"
+              type="button"
+              onClick={(e) => handleSubmit(e)}
               className="min-w-[160px] px-4 py-2 bg-[#0071E0] text-white rounded-lg hover:bg-blue-600 transition duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               disabled={!!dateError || !!moqError || isLoading}
             >
