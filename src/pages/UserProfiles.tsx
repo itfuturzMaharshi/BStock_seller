@@ -53,22 +53,22 @@ export default function UserProfiles() {
     // Then fetch fresh profile from API
     (async () => {
       try {
-        const profile = await AuthService.getProfile();
-        const p: any = profile?.data || {};
-        setFormData((prev) => ({
-          ...prev,
-          name: p?.name ?? prev.name,
-          email: p?.email ?? prev.email,
+      const profile = await AuthService.getProfile();
+      const p: any = profile?.data || {};
+      setFormData((prev) => ({
+        ...prev,
+        name: p?.name ?? prev.name,
+        email: p?.email ?? prev.email,
           phone: p?.mobileNumber ?? prev.phone,
           businessName: p?.businessName ?? p?.businessProfile?.businessName ?? prev.businessName,
           businessCountry: p?.country ?? p?.businessProfile?.country ?? prev.businessCountry,
           businessAddress: p?.address ?? p?.businessProfile?.address ?? prev.businessAddress,
         }));
 
-        // Update localStorage user in sync
-        try {
-          const stored = localStorage.getItem("user");
-          const prevUser = stored ? JSON.parse(stored) : {};
+      // Update localStorage user in sync
+      try {
+        const stored = localStorage.getItem("user");
+        const prevUser = stored ? JSON.parse(stored) : {};
           const merged = {
             ...prevUser,
             name: p?.name ?? prevUser?.name,
@@ -83,8 +83,8 @@ export default function UserProfiles() {
               certificate: p?.certificate ?? prevUser?.businessProfile?.certificate,
             },
           };
-          localStorage.setItem("user", JSON.stringify(merged));
-        } catch {}
+        localStorage.setItem("user", JSON.stringify(merged));
+      } catch {}
       } catch {}
     })();
   }, []);
