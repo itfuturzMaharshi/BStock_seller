@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { AuthService } from "../../services/auth/auth.services";
 import toastHelper from "../../utils/toastHelper";
+import countriesData from "../../data/countries.json";
 
 interface FormData {
   name: string;
@@ -40,16 +41,68 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
 
+  // Country code dropdown state
+  const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
+  const [phoneSearchTerm, setPhoneSearchTerm] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowPhoneDropdown(false);
+        setPhoneSearchTerm("");
+      }
+    };
+
+    if (showPhoneDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPhoneDropdown]);
+
+  // Process countries data
+  const countries = useMemo(() => {
+    return [...countriesData.countries]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((country) => ({
+        name: country.name,
+        code: country.code,
+        phone_code: country.phone_code,
+        flag: country.flag,
+      }));
+  }, []);
+
+  // Filter countries based on search term
+  const getFilteredCountries = (searchTerm: string) => {
+    if (!searchTerm) return countries;
+    return countries.filter(
+      (country) =>
+        country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        country.phone_code.includes(searchTerm)
+    );
+  };
+
+  // Handle country code change
+  const handlePhoneCodeChange = (phoneCode: string) => {
+    handleChange({ target: { name: 'countryCode', value: phoneCode } } as React.ChangeEvent<HTMLInputElement>);
+    setShowPhoneDropdown(false);
+    setPhoneSearchTerm("");
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
       const payload = {
-        businessName: formData.businessName || undefined,
-        country: formData.businessCountry || undefined,
-        address: formData.businessAddress || undefined,
-        name: formData.name || undefined,
-        email: formData.email || undefined,
-        mobileNumber: formData.phone || undefined,
+        businessName: formData.businessName?.trim(),
+        country: formData.businessCountry?.trim(),
+        address: formData.businessAddress?.trim(),
+        name: formData?.name?.trim(),
+        email: formData?.email?.trim(),
+        mobileNumber: formData?.phone?.trim(),
         logo: logoFile || undefined,
         certificate: certificateFile || undefined,
       } as any;
@@ -67,11 +120,11 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
           mobileNumber: profile?.data?.mobileNumber ?? payload.mobileNumber ?? prevUser?.mobileNumber,
           businessProfile: {
             ...(prevUser?.businessProfile || {}),
-            businessName: profile?.data?.businessName ?? payload.businessName ?? prevUser?.businessProfile?.businessName,
-            country: profile?.data?.country ?? payload.country ?? prevUser?.businessProfile?.country,
-            address: profile?.data?.address ?? payload.address ?? prevUser?.businessProfile?.address,
-            logo: profile?.data?.logo ?? prevUser?.businessProfile?.logo,
-            certificate: profile?.data?.certificate ?? prevUser?.businessProfile?.certificate,
+            businessName: profile?.data?.businessProfile?.businessName ?? payload.businessName ?? prevUser?.businessProfile?.businessName,
+            country: profile?.data?.businessProfile?.country ?? payload.country ?? prevUser?.businessProfile?.country,
+            address: profile?.data?.businessProfile?.address ?? payload.address ?? prevUser?.businessProfile?.address,
+            logo: profile?.data?.businessProfile?.logo ?? prevUser?.businessProfile?.logo,
+            certificate: profile?.data?.businessProfile?.certificate ?? prevUser?.businessProfile?.certificate,
           },
         };
         localStorage.setItem("user", JSON.stringify(merged));
@@ -224,23 +277,119 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                 <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
                   <i className="fas fa-phone text-gray-500"></i> Phone
                 </p>
-                <div className="flex gap-3">
+                <div className="relative flex">
                   {isEditing ? (
                     <>
-                      <input
-                        type="text"
-                        name="countryCode"
-                        value={formData.countryCode}
-                        onChange={handleChange}
-                        className="w-20 px-3 py-2 text-sm border rounded-lg focus:ring focus:ring-brand-300 dark:bg-gray-800 dark:text-white/90"
-                      />
-                      <input
-                        type="text"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className="flex-1 px-3 py-2 text-sm border rounded-lg focus:ring focus:ring-brand-300 dark:bg-gray-800 dark:text-white/90"
-                      />
+                      {/* Country Code Selector */}
+                      <div className="relative w-24 mr-2" ref={dropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPhoneDropdown(!showPhoneDropdown);
+                            if (showPhoneDropdown) setPhoneSearchTerm(""); // Clear search when closing
+                          }}
+                          className="flex items-center justify-between cursor-pointer w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-700 text-sm hover:bg-gray-100 transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                        >
+                          <div className="flex items-center">
+                            {countries.find((c) => c.phone_code === formData.countryCode)?.flag && (
+                              <img
+                                src={
+                                  countries.find((c) => c.phone_code === formData.countryCode)?.flag || ""
+                                }
+                                alt="flag"
+                                className="w-4 h-4 mr-1"
+                              />
+                            )}
+                            <span>{formData.countryCode}</span>
+                          </div>
+                          <svg
+                            className="ml-1 w-3 h-3 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </button>
+                        {showPhoneDropdown && (
+                          <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-300 rounded-lg shadow-lg z-10 dark:bg-gray-700 dark:border-gray-600">
+                            {/* Search Input */}
+                            <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                              <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <svg
+                                    className="w-4 h-4 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                    />
+                                  </svg>
+                                </div>
+                                <input
+                                  type="text"
+                                  value={phoneSearchTerm}
+                                  onChange={(e) => setPhoneSearchTerm(e.target.value)}
+                                  className="block w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                                  placeholder="Search countries..."
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
+                            {/* Countries List */}
+                            <div className="max-h-48 overflow-y-auto">
+                              {getFilteredCountries(phoneSearchTerm).map((country) => (
+                                <div
+                                  key={country.code}
+                                  onClick={() => handlePhoneCodeChange(country.phone_code)}
+                                  className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm dark:hover:bg-gray-600"
+                                >
+                                  <img
+                                    src={country.flag}
+                                    alt={country.name}
+                                    className="w-4 h-4 mr-2"
+                                  />
+                                  <span className="truncate text-gray-900 dark:text-gray-100">
+                                    {country.name}
+                                  </span>
+                                  <span className="ml-auto text-gray-500 dark:text-gray-300">
+                                    {country.phone_code}
+                                  </span>
+                                </div>
+                              ))}
+                              {getFilteredCountries(phoneSearchTerm).length === 0 && (
+                                <div className="px-3 py-2 text-sm text-gray-500 text-center dark:text-gray-400">
+                                  No countries found
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {/* Phone Number Input */}
+                      <div className="relative flex-1">
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/\D/g, "");
+                            handleChange({ target: { name: 'phone', value: numericValue } } as React.ChangeEvent<HTMLInputElement>);
+                          }}
+                          className="w-full px-3 py-2 text-sm border rounded-lg focus:ring focus:ring-brand-300 dark:bg-gray-800 dark:text-white/90"
+                          placeholder="Enter your phone number"
+                        />
+                      </div>
                     </>
                   ) : (
                     <p className="text-sm font-medium text-gray-800 dark:text-white/90">

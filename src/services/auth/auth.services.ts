@@ -48,6 +48,21 @@ export interface ProfileData {
   profileImage?: File | string | null;
 }
 
+export interface BusinessProfile {
+  businessName?: string | null;
+  country?: string | null;
+  address?: string | null;
+  logo?: string | null;
+  certificate?: string | null;
+}
+
+export interface UserProfile {
+  name?: string;
+  email?: string;
+  mobileNumber?: string;
+  businessProfile?: BusinessProfile;
+}
+
 export interface ProfileResponse<T = any> {
   status: number;
   message: string;
@@ -181,12 +196,12 @@ export class AuthService {
     }
   };
 
-  static getProfile = async (): Promise<ProfileResponse<ProfileData>> => {
+  static getProfile = async (): Promise<ProfileResponse<UserProfile>> => {
     const baseUrl = env.baseUrl;
     try {
       const url = `${baseUrl}/api/seller/getProfile`;
       const res = await api.post(url, {});
-      return res.data as ProfileResponse<ProfileData>;
+      return res.data as ProfileResponse<UserProfile>;
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load profile';
       toastHelper.showTost(errorMessage, 'error');
@@ -197,41 +212,77 @@ export class AuthService {
   static updateProfile = async (payload: ProfileData): Promise<ProfileResponse> => {
     const baseUrl = env.baseUrl;
 
-    const form = new FormData();
-    if (payload.businessName !== undefined) form.append('businessName', String(payload.businessName));
-    if (payload.country !== undefined) form.append('country', String(payload.country));
-    if (payload.address !== undefined) form.append('address', String(payload.address));
-    if (payload.name !== undefined) form.append('name', String(payload.name));
-    if (payload.email !== undefined) form.append('email', String(payload.email));
-    if (payload.mobileNumber !== undefined) form.append('mobileNumber', String(payload.mobileNumber));
 
-    if (payload.logo instanceof File) {
-      form.append('logo', payload.logo);
-    } else if (typeof payload.logo === 'string') {
-      form.append('logo', payload.logo);
-    }
+    // Check if we have files to upload
+    const hasFiles = payload.logo instanceof File || payload.certificate instanceof File || payload.profileImage instanceof File;
+    
+    if (hasFiles) {
+      // Use FormData for file uploads
+      const form = new FormData();
+      
+      // Always include these fields, even if empty, so backend can clear them
+      form.append('businessName', payload.businessName || '');
+      form.append('country', payload.country || '');
+      form.append('address', payload.address || '');
+      form.append('name', payload.name || '');
+      form.append('email', payload.email || '');
+      form.append('mobileNumber', payload.mobileNumber || '');
 
-    if (payload.certificate instanceof File) {
-      form.append('certificate', payload.certificate);
-    } else if (typeof payload.certificate === 'string') {
-      form.append('certificate', payload.certificate);
-    }
+      if (payload.logo instanceof File) {
+        form.append('logo', payload.logo);
+      } else if (typeof payload.logo === 'string') {
+        form.append('logo', payload.logo);
+      }
 
-    if (payload.profileImage instanceof File) {
-      form.append('profileImage', payload.profileImage);
-    } else if (typeof payload.profileImage === 'string') {
-      form.append('profileImage', payload.profileImage);
-    }
+      if (payload.certificate instanceof File) {
+        form.append('certificate', payload.certificate);
+      } else if (typeof payload.certificate === 'string') {
+        form.append('certificate', payload.certificate);
+      }
 
-    try {
-      const url = `${baseUrl}/api/seller/updateBusinessProfile`;
-      const res = await api.post(url, form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      toastHelper.showTost(res.data?.message || 'Profile updated successfully', 'success');
-      return res.data as ProfileResponse;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to update profile';
-      toastHelper.showTost(errorMessage, 'error');
-      throw new Error(errorMessage);
+      if (payload.profileImage instanceof File) {
+        form.append('profileImage', payload.profileImage);
+      } else if (typeof payload.profileImage === 'string') {
+        form.append('profileImage', payload.profileImage);
+      }
+
+      try {
+        const url = `${baseUrl}/api/seller/updateBusinessProfile`;
+        
+        const res = await api.post(url, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+        
+        toastHelper.showTost(res.data?.message || 'Profile updated successfully', 'success');
+        return res.data as ProfileResponse;
+      } catch (err: any) {
+        const errorMessage = err.response?.data?.message || 'Failed to update profile';
+        toastHelper.showTost(errorMessage, 'error');
+        throw new Error(errorMessage);
+      }
+    } else {
+      // Use JSON for non-file updates
+      const jsonPayload = {
+        businessName: payload.businessName || '',
+        country: payload.country || '',
+        address: payload.address || '',
+        name: payload.name || '',
+        email: payload.email || '',
+        mobileNumber: payload.mobileNumber || ''
+      };
+
+      try {
+        const url = `${baseUrl}/api/seller/updateBusinessProfile`;
+        
+        const res = await api.post(url, jsonPayload, { 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+        
+        toastHelper.showTost(res.data?.message || 'Profile updated successfully', 'success');
+        return res.data as ProfileResponse;
+      } catch (err: any) {
+        const errorMessage = err.response?.data?.message || 'Failed to update profile';
+        toastHelper.showTost(errorMessage, 'error');
+        throw new Error(errorMessage);
+      }
     }
   };
 
@@ -244,21 +295,16 @@ export class AuthService {
       const res = await api.post(url, payload);
       const data: ProfileResponse = res.data;
 
-      console.log('data : ', data)
-
       if (data.status == 200 && data.data) {
         toastHelper.showTost(data.message || 'Password changed successfully', 'success');
         return data.data;
       } else {
-        console.log('data is null')
         const errorMessage = data.message || 'Failed to change password';
         toastHelper.showTost(errorMessage, 'warning');
         return data.data;
-        // throw new Error(errorMessage);
       }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Failed to change password';
-      console.log('err : ', err)
       toastHelper.showTost(errorMessage, 'error');
       throw new Error(errorMessage);
     }
