@@ -18,11 +18,18 @@ interface FormData {
 
 interface UserInfoCardProps {
   formData: FormData;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
 }
 
-export default function UserInfoCard({ formData, handleChange }: UserInfoCardProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "business" | "account">("profile");
+export default function UserInfoCard({
+  formData,
+  handleChange,
+}: UserInfoCardProps) {
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "business" | "account"
+  >("profile");
   const [showPassword, setShowPassword] = useState<{
     current: boolean;
     new: boolean;
@@ -48,18 +55,21 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowPhoneDropdown(false);
         setPhoneSearchTerm("");
       }
     };
 
     if (showPhoneDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showPhoneDropdown]);
 
@@ -87,7 +97,9 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
 
   // Handle country code change
   const handlePhoneCodeChange = (phoneCode: string) => {
-    handleChange({ target: { name: 'countryCode', value: phoneCode } } as React.ChangeEvent<HTMLInputElement>);
+    handleChange({
+      target: { name: "countryCode", value: phoneCode },
+    } as React.ChangeEvent<HTMLInputElement>);
     setShowPhoneDropdown(false);
     setPhoneSearchTerm("");
   };
@@ -116,14 +128,30 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
           ...prevUser,
           name: profile?.data?.name ?? payload.name ?? prevUser?.name,
           email: profile?.data?.email ?? payload.email ?? prevUser?.email,
-          mobileNumber: profile?.data?.mobileNumber ?? payload.mobileNumber ?? prevUser?.mobileNumber,
+          mobileNumber:
+            profile?.data?.mobileNumber ??
+            payload.mobileNumber ??
+            prevUser?.mobileNumber,
           businessProfile: {
             ...(prevUser?.businessProfile || {}),
-            businessName: profile?.data?.businessProfile?.businessName ?? payload.businessName ?? prevUser?.businessProfile?.businessName,
-            country: profile?.data?.businessProfile?.country ?? payload.country ?? prevUser?.businessProfile?.country,
-            address: profile?.data?.businessProfile?.address ?? payload.address ?? prevUser?.businessProfile?.address,
-            logo: profile?.data?.businessProfile?.logo ?? prevUser?.businessProfile?.logo,
-            certificate: profile?.data?.businessProfile?.certificate ?? prevUser?.businessProfile?.certificate,
+            businessName:
+              profile?.data?.businessProfile?.businessName ??
+              payload.businessName ??
+              prevUser?.businessProfile?.businessName,
+            country:
+              profile?.data?.businessProfile?.country ??
+              payload.country ??
+              prevUser?.businessProfile?.country,
+            address:
+              profile?.data?.businessProfile?.address ??
+              payload.address ??
+              prevUser?.businessProfile?.address,
+            logo:
+              profile?.data?.businessProfile?.logo ??
+              prevUser?.businessProfile?.logo,
+            certificate:
+              profile?.data?.businessProfile?.certificate ??
+              prevUser?.businessProfile?.certificate,
           },
         };
         localStorage.setItem("user", JSON.stringify(merged));
@@ -136,12 +164,19 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
   };
 
   const handleChangePassword = async () => {
-    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+    if (
+      !formData.currentPassword ||
+      !formData.newPassword ||
+      !formData.confirmPassword
+    ) {
       toastHelper.showTost("Please fill all password fields", "warning");
       return;
     }
     if (formData.newPassword !== formData.confirmPassword) {
-      toastHelper.showTost("New password and confirm password do not match", "warning");
+      toastHelper.showTost(
+        "New password and confirm password do not match",
+        "warning"
+      );
       return;
     }
     if (formData.newPassword.length < 6) {
@@ -156,12 +191,18 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
         newPassword: formData.newPassword,
       });
 
-      if(!response) return;
+      if (!response) return;
 
       // Clear password fields on success
-      handleChange({ target: { name: 'currentPassword', value: '' } } as React.ChangeEvent<HTMLInputElement>);
-      handleChange({ target: { name: 'newPassword', value: '' } } as React.ChangeEvent<HTMLInputElement>);
-      handleChange({ target: { name: 'confirmPassword', value: '' } } as React.ChangeEvent<HTMLInputElement>);
+      handleChange({
+        target: { name: "currentPassword", value: "" },
+      } as React.ChangeEvent<HTMLInputElement>);
+      handleChange({
+        target: { name: "newPassword", value: "" },
+      } as React.ChangeEvent<HTMLInputElement>);
+      handleChange({
+        target: { name: "confirmPassword", value: "" },
+      } as React.ChangeEvent<HTMLInputElement>);
     } catch (error) {
       // Error toast already handled in service
     } finally {
@@ -173,13 +214,16 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
     setShowPassword((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'certificate') => {
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "logo" | "certificate"
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
-        if (type === 'logo') {
+        if (type === "logo") {
           setLogoImage(result);
           setLogoFile(file);
         } else {
@@ -191,8 +235,8 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
     }
   };
 
-  const removeImage = (type: 'logo' | 'certificate') => {
-    if (type === 'logo') {
+  const removeImage = (type: "logo" | "certificate") => {
+    if (type === "logo") {
       setLogoImage(null);
       setLogoFile(null);
     } else {
@@ -240,12 +284,11 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
       {/* Profile Tab */}
       {activeTab === "profile" && (
         <div className="space-y-6">
-
-
           <div className="grid grid-cols-1 gap-6">
             <div>
               <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
-                <i className="fas fa-user text-gray-500"></i> Name<span className="text-red-500">*</span>
+                <i className="fas fa-user text-gray-500"></i> Name
+                <span className="text-red-500">*</span>
               </p>
               <input
                 type="text"
@@ -259,7 +302,8 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
 
             <div>
               <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
-                <i className="fas fa-envelope text-gray-500"></i> Email Address<span className="text-red-500">*</span>
+                <i className="fas fa-envelope text-gray-500"></i> Email Address
+                <span className="text-red-500">*</span>
               </p>
               <input
                 type="email"
@@ -273,7 +317,8 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
 
             <div>
               <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
-                <i className="fas fa-phone text-gray-500"></i> Mobile Number<span className="text-red-500">*</span>
+                <i className="fas fa-phone text-gray-500"></i> Mobile Number
+                <span className="text-red-500">*</span>
               </p>
               <div className="relative flex gap-2">
                 {/* Country Code Selector */}
@@ -287,9 +332,15 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                     className="flex items-center justify-between cursor-pointer w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black text-gray-700 text-sm hover:bg-gray-100 transition-colors h-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
                   >
                     <div className="flex items-center">
-                      {countries.find((c) => c.phone_code === formData.countryCode)?.flag && (
+                      {countries.find(
+                        (c) => c.phone_code === formData.countryCode
+                      )?.flag && (
                         <img
-                          src={countries.find((c) => c.phone_code === formData.countryCode)?.flag || ""}
+                          src={
+                            countries.find(
+                              (c) => c.phone_code === formData.countryCode
+                            )?.flag || ""
+                          }
                           alt="flag"
                           className="w-4 h-4 mr-1"
                         />
@@ -312,7 +363,6 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                   </button>
                   {showPhoneDropdown && (
                     <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-300 rounded-lg shadow-lg z-10 dark:bg-gray-700 dark:border-gray-600">
-
                       <div className="p-2 border-b border-gray-200 dark:border-gray-600">
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -342,25 +392,29 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                       </div>
 
                       <div className="max-h-48 overflow-y-auto">
-                        {getFilteredCountries(phoneSearchTerm).map((country) => (
-                          <div
-                            key={country.code}
-                            onClick={() => handlePhoneCodeChange(country.phone_code)}
-                            className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm dark:hover:bg-gray-600"
-                          >
-                            <img
-                              src={country.flag}
-                              alt={country.name}
-                              className="w-4 h-4 mr-2"
-                            />
-                            <span className="truncate text-gray-900 dark:text-gray-100">
-                              {country.name}
-                            </span>
-                            <span className="ml-auto text-gray-500 dark:text-gray-300">
-                              {country.phone_code}
-                            </span>
-                          </div>
-                        ))}
+                        {getFilteredCountries(phoneSearchTerm).map(
+                          (country) => (
+                            <div
+                              key={country.code}
+                              onClick={() =>
+                                handlePhoneCodeChange(country.phone_code)
+                              }
+                              className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm dark:hover:bg-gray-600"
+                            >
+                              <img
+                                src={country.flag}
+                                alt={country.name}
+                                className="w-4 h-4 mr-2"
+                              />
+                              <span className="truncate text-gray-900 dark:text-gray-100">
+                                {country.name}
+                              </span>
+                              <span className="ml-auto text-gray-500 dark:text-gray-300">
+                                {country.phone_code}
+                              </span>
+                            </div>
+                          )
+                        )}
                         {getFilteredCountries(phoneSearchTerm).length === 0 && (
                           <div className="px-3 py-2 text-sm text-gray-500 text-center dark:text-gray-400">
                             No countries found
@@ -378,7 +432,9 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                     value={formData.phone}
                     onChange={(e) => {
                       const numericValue = e.target.value.replace(/\D/g, "");
-                      handleChange({ target: { name: 'phone', value: numericValue } } as React.ChangeEvent<HTMLInputElement>);
+                      handleChange({
+                        target: { name: "phone", value: numericValue },
+                      } as React.ChangeEvent<HTMLInputElement>);
                     }}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg  dark:bg-gray-800 dark:text-white/90"
                     placeholder="Enter your phone number"
@@ -391,22 +447,40 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
           <div className="flex justify-end mt-6">
             <button
               onClick={handleSave}
-              className="flex items-center justify-center gap-2 rounded-lg px-6 py-2 text-sm font-medium text-white shadow bg-[#0071E3] hover:bg-[#005bb5] disabled:opacity-60 transition-colors"
+              className="flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-base font-medium text-white shadow bg-[#0071E3] hover:bg-[#005bb5] disabled:opacity-60 transition-colors"
               disabled={isSaving}
             >
               {isSaving ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <span className="flex items-center justify-center gap-2 min-w-[130px]">
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 
+           5.373 0 12h4zm2 5.291A7.962 7.962 
+           0 014 12H0c0 3.042 1.135 5.824 
+           3 7.938l3-2.647z"
+                    ></path>
                   </svg>
-                  <span>Saving...</span>
-                </>
+                </span>
               ) : (
-                <>
+                <span className="flex items-center justify-center gap-2 min-w-[130px]">
                   <i className="fas fa-save"></i>
                   <span>Save Changes</span>
-                </>
+                </span>
               )}
             </button>
           </div>
@@ -416,14 +490,11 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
       {/* Business Profile Tab */}
       {activeTab === "business" && (
         <div className="space-y-6">
-
-
-
-
           <div className="grid grid-cols-1 gap-6">
             <div>
               <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
-                <i className="fas fa-briefcase text-gray-500"></i> Business Name<span className="text-red-500">*</span>
+                <i className="fas fa-briefcase text-gray-500"></i> Business Name
+                <span className="text-red-500">*</span>
               </p>
               <input
                 type="text"
@@ -438,7 +509,8 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
-                  <i className="fas fa-globe text-gray-500"></i> Country<span className="text-red-500">*</span>
+                  <i className="fas fa-globe text-gray-500"></i> Country
+                  <span className="text-red-500">*</span>
                 </p>
                 <input
                   type="text"
@@ -451,15 +523,19 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
               </div>
               <div>
                 <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
-                  <i className="fas fa-dollar-sign text-gray-500"></i> Currency<span className="text-red-500">*</span>
+                  <i className="fas fa-dollar-sign text-gray-500"></i> Currency
+                  <span className="text-red-500">*</span>
                 </p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90 px-3 py-2">AED</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90 px-3 py-2">
+                  AED
+                </p>
               </div>
             </div>
 
             <div>
               <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
-                <i className="fas fa-map-marker-alt text-gray-500"></i> Business Address
+                <i className="fas fa-map-marker-alt text-gray-500"></i> Business
+                Address
                 <span className="text-xs text-gray-400">(Optional)</span>
               </p>
               <textarea
@@ -484,12 +560,14 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleImageUpload(e, 'logo')}
+                      onChange={(e) => handleImageUpload(e, "logo")}
                       className="hidden"
                     />
                   </label>
                   {logoFile && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{logoFile.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {logoFile.name}
+                    </p>
                   )}
                   {logoImage && (
                     <div className="relative inline-block">
@@ -500,7 +578,7 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage('logo')}
+                        onClick={() => removeImage("logo")}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
                       >
                         <i className="fas fa-times"></i>
@@ -512,7 +590,8 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
 
               <div>
                 <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
-                  <i className="fas fa-certificate text-gray-500"></i> Business Certificate
+                  <i className="fas fa-certificate text-gray-500"></i> Business
+                  Certificate
                   <span className="text-xs text-gray-400">(Optional)</span>
                 </p>
                 <div className="space-y-3">
@@ -521,12 +600,14 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                     <input
                       type="file"
                       accept="image/*,.pdf"
-                      onChange={(e) => handleImageUpload(e, 'certificate')}
+                      onChange={(e) => handleImageUpload(e, "certificate")}
                       className="hidden"
                     />
                   </label>
                   {certificateFile && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{certificateFile.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {certificateFile.name}
+                    </p>
                   )}
                   {certificateImage && (
                     <div className="relative inline-block">
@@ -537,7 +618,7 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage('certificate')}
+                        onClick={() => removeImage("certificate")}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
                       >
                         <i className="fas fa-times"></i>
@@ -552,26 +633,43 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
           <div className="flex justify-end mt-6">
             <button
               onClick={handleSave}
-              className="flex items-center justify-center gap-2 rounded-lg px-6 py-2 text-sm font-medium text-white shadow bg-[#0071E3] hover:bg-[#005bb5] disabled:opacity-60 transition-colors"
+              className="flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-base font-medium text-white shadow bg-[#0071E3] hover:bg-[#005bb5] disabled:opacity-60 transition-colors"
               disabled={isSaving}
             >
               {isSaving ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <span className="flex items-center justify-center gap-2 min-w-[220px]">
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 
+             5.373 0 12h4zm2 5.291A7.962 7.962 
+             0 014 12H0c0 3.042 1.135 5.824 
+             3 7.938l3-2.647z"
+                    ></path>
                   </svg>
-                  <span>Saving...</span>
-                </>
+                </span>
               ) : (
-                <>
+                <span className="flex items-center justify-center gap-2 min-w-[220px]">
                   <i className="fas fa-save"></i>
                   <span>Save Business Profile</span>
-                </>
+                </span>
               )}
             </button>
           </div>
-
         </div>
       )}
 
@@ -656,10 +754,7 @@ export default function UserInfoCard({ formData, handleChange }: UserInfoCardPro
           <div className="flex justify-end mt-6">
             <button
               onClick={handleChangePassword}
-              className="flex items-center justify-center gap-2 rounded-full border border-gray-300 
-    bg-[#0071E3] px-4 py-3 text-base font-medium text-white shadow 
-    hover:bg-[#005bb5] dark:border-gray-700 dark:bg-gray-800 
-      dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+              className="flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-base font-medium text-white shadow bg-[#0071E3] hover:bg-[#005bb5] disabled:opacity-60 transition-colors"
               disabled={isChangingPassword}
             >
               {isChangingPassword ? (
