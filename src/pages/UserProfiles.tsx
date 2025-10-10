@@ -15,6 +15,7 @@ interface FormData {
   confirmPassword: string;
   businessName: string;
   businessCountry: string;
+  businessCurrency: string;
   businessAddress: string;
 }
 
@@ -29,6 +30,7 @@ export default function UserProfiles() {
     confirmPassword: "",
     businessName: "",
     businessCountry: "",
+    businessCurrency: "",
     businessAddress: "",
   });
 
@@ -46,6 +48,7 @@ export default function UserProfiles() {
           phone: user?.mobileNumber || "",
           businessName: business?.businessName || "",
           businessCountry: business?.country || "",
+          businessCurrency: business?.currency || "",
           businessAddress: business?.address || "",
         }));
       }
@@ -63,6 +66,7 @@ export default function UserProfiles() {
           phone: p?.mobileNumber ?? prev.phone,
           businessName: p?.businessName ?? p?.businessProfile?.businessName ?? prev.businessName,
           businessCountry: p?.country ?? p?.businessProfile?.country ?? prev.businessCountry,
+          businessCurrency: p?.currency ?? p?.businessProfile?.currency ?? prev.businessCurrency,
           businessAddress: p?.address ?? p?.businessProfile?.address ?? prev.businessAddress,
         }));
 
@@ -79,6 +83,7 @@ export default function UserProfiles() {
               ...(prevUser?.businessProfile || {}),
               businessName: p?.businessName ?? p?.businessProfile?.businessName ?? prevUser?.businessProfile?.businessName,
               country: p?.country ?? p?.businessProfile?.country ?? prevUser?.businessProfile?.country,
+              currency: p?.currency ?? p?.businessProfile?.currency ?? prevUser?.businessProfile?.currency,
               address: p?.address ?? p?.businessProfile?.address ?? prevUser?.businessProfile?.address,
               logo: p?.logo ?? prevUser?.businessProfile?.logo,
               certificate: p?.certificate ?? prevUser?.businessProfile?.certificate,
