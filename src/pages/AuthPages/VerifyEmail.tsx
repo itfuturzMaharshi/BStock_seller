@@ -2,6 +2,7 @@ import  { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import { AuthService } from "../../services/auth/auth.services";
 import AuthPageLayout from "./AuthPageLayout";
+import { STORAGE_KEYS, StorageService } from "../../constants/storage";
 
 export default function VerifyEmail() {
   const { token } = useParams();
@@ -21,7 +22,7 @@ export default function VerifyEmail() {
       try {
         const res = await AuthService.verifyEmail(token);
         if (res.data && res.data.token) {
-          localStorage.setItem("token", res.data.token);
+          StorageService.setItem(STORAGE_KEYS.TOKEN, res.data.token);
           setSuccess(true);
           // Redirect after 2 seconds
           setTimeout(() => navigate("/signin"), 2000);

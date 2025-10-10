@@ -3,6 +3,7 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
 import PageMeta from "../components/common/PageMeta";
 import { AuthService } from "../services/auth/auth.services";
+import { STORAGE_KEYS, StorageService } from "../constants/storage";
 
 interface FormData {
   name: string;
@@ -34,9 +35,9 @@ export default function UserProfiles() {
   useEffect(() => {
     // Load from localStorage as a fast-first render
     try {
-      const stored = localStorage.getItem("user");
+      const stored = StorageService.getItem(STORAGE_KEYS.USER);
       if (stored) {
-        const user = JSON.parse(stored) as any;
+        const user = stored as any;
         const business = user?.businessProfile || {};
         setFormData((prev) => ({
           ...prev,
@@ -67,8 +68,8 @@ export default function UserProfiles() {
 
       // Update localStorage user in sync
       try {
-        const stored = localStorage.getItem("user");
-        const prevUser = stored ? JSON.parse(stored) : {};
+        const stored = StorageService.getItem(STORAGE_KEYS.USER);
+        const prevUser = (stored as any) || {};
           const merged = {
             ...prevUser,
             name: p?.name ?? prevUser?.name,
@@ -83,7 +84,7 @@ export default function UserProfiles() {
               certificate: p?.certificate ?? prevUser?.businessProfile?.certificate,
             },
           };
-        localStorage.setItem("user", JSON.stringify(merged));
+        StorageService.setItem(STORAGE_KEYS.USER, merged);
       } catch {}
       } catch {}
     })();

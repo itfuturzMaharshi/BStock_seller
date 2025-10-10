@@ -81,14 +81,16 @@ export class EmailNotVerifiedError extends Error {
   }
 }
 
+import { STORAGE_KEYS, StorageService } from '../../constants/storage';
+
 function persistSession(token?: string, user?: User): void {
-  if (token) localStorage.setItem("token", token);
-  if (user) localStorage.setItem("user", JSON.stringify(user));
+  if (token) StorageService.setItem(STORAGE_KEYS.TOKEN, token);
+  if (user) StorageService.setItem(STORAGE_KEYS.USER, user);
 }
 
 function clearSession(): void {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  StorageService.removeItem(STORAGE_KEYS.TOKEN);
+  StorageService.removeItem(STORAGE_KEYS.USER);
 }
 
 export class AuthService {

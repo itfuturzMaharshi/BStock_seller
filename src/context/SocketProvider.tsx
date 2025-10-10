@@ -34,8 +34,8 @@ export function SocketProvider({ children, url }: { children: React.ReactNode; u
 
   // Get user data from localStorage
   const getUserData = useCallback((): { userId: string; userType: UserType } | null => {
-    const userId = localStorage.getItem('userId');
-    const userType = localStorage.getItem('userType') as UserType;
+    const userId = StorageService.getItem(STORAGE_KEYS.USER_ID);
+    const userType = StorageService.getItem<UserType>(STORAGE_KEYS.USER_TYPE);
     
     if (!userId || !userType) {
       console.warn('Missing userId or userType in localStorage');

@@ -1,5 +1,6 @@
 import  { useEffect, useMemo, useState } from 'react';
 import { useSocket } from '../../context/SocketProvider';
+import { STORAGE_KEYS, StorageService } from '../../constants/storage';
 
 export default function SocketDemo() {
   const { socket, connect, isConnected } = useSocket();
@@ -9,7 +10,7 @@ export default function SocketDemo() {
 
   const token = useMemo(() => {
     // Replace with real JWT retrieval; demo fallback
-    return localStorage.getItem('auth_token') || '';
+    return StorageService.getItem(STORAGE_KEYS.AUTH_TOKEN) || '';
   }, []);
 
   useEffect(() => {

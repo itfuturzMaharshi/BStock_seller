@@ -2,6 +2,15 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { AuthService } from "../../services/auth/auth.services";
 import toastHelper from "../../utils/toastHelper";
 import countriesData from "../../data/countries.json";
+import { STORAGE_KEYS, StorageService } from "../../constants/storage";
+
+// Country to Currency mapping
+const countryToCurrency = {
+  Hongkong: "HKD",
+  Dubai: "AED",
+  Singapore: "SGD",
+  India: "INR",
+};
 
 interface FormData {
   name: string;
@@ -13,6 +22,7 @@ interface FormData {
   confirmPassword: string;
   businessName: string;
   businessCountry: string;
+  businessCurrency: string;
   businessAddress: string;
 }
 
@@ -52,7 +62,14 @@ export default function UserInfoCard({
   const [phoneSearchTerm, setPhoneSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Handle click outside to close dropdown
+  // Business country and currency dropdown state
+  const [showBusinessCountryDropdown, setShowBusinessCountryDropdown] = useState(false);
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [businessCountrySearchTerm, setBusinessCountrySearchTerm] = useState("");
+  const businessCountryRef = useRef<HTMLDivElement>(null);
+  const currencyRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -62,16 +79,29 @@ export default function UserInfoCard({
         setShowPhoneDropdown(false);
         setPhoneSearchTerm("");
       }
+      if (
+        businessCountryRef.current &&
+        !businessCountryRef.current.contains(event.target as Node)
+      ) {
+        setShowBusinessCountryDropdown(false);
+        setBusinessCountrySearchTerm("");
+      }
+      if (
+        currencyRef.current &&
+        !currencyRef.current.contains(event.target as Node)
+      ) {
+        setShowCurrencyDropdown(false);
+      }
     };
 
-    if (showPhoneDropdown) {
+    if (showPhoneDropdown || showBusinessCountryDropdown || showCurrencyDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showPhoneDropdown]);
+  }, [showPhoneDropdown, showBusinessCountryDropdown, showCurrencyDropdown]);
 
   // Process countries data
   const countries = useMemo(() => {
@@ -95,6 +125,18 @@ export default function UserInfoCard({
     );
   };
 
+  // Get business countries list (limited to mapped countries)
+  const businessCountries = ["Hongkong", "Dubai", "Singapore", "India"];
+  const currencies = ["HKD", "AED", "SGD", "INR"];
+
+  // Filter business countries based on search term
+  const getFilteredBusinessCountries = (searchTerm: string) => {
+    if (!searchTerm) return businessCountries;
+    return businessCountries.filter((country) =>
+      country.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
   // Handle country code change
   const handlePhoneCodeChange = (phoneCode: string) => {
     handleChange({
@@ -102,6 +144,32 @@ export default function UserInfoCard({
     } as React.ChangeEvent<HTMLInputElement>);
     setShowPhoneDropdown(false);
     setPhoneSearchTerm("");
+  };
+
+  // Handle business country change
+  const handleBusinessCountryChange = (country: string) => {
+    handleChange({
+      target: { name: "businessCountry", value: country },
+    } as React.ChangeEvent<HTMLInputElement>);
+    
+    // Auto-set currency based on country
+    const currency = countryToCurrency[country as keyof typeof countryToCurrency];
+    if (currency) {
+      handleChange({
+        target: { name: "businessCurrency", value: currency },
+      } as React.ChangeEvent<HTMLInputElement>);
+    }
+    
+    setShowBusinessCountryDropdown(false);
+    setBusinessCountrySearchTerm("");
+  };
+
+  // Handle currency change
+  const handleCurrencyChange = (currency: string) => {
+    handleChange({
+      target: { name: "businessCurrency", value: currency },
+    } as React.ChangeEvent<HTMLInputElement>);
+    setShowCurrencyDropdown(false);
   };
 
   const handleSave = async () => {
@@ -122,8 +190,8 @@ export default function UserInfoCard({
 
       try {
         const profile = await AuthService.getProfile();
-        const stored = localStorage.getItem("user");
-        const prevUser = stored ? JSON.parse(stored) : {};
+        const stored = StorageService.getItem(STORAGE_KEYS.USER);
+        const prevUser = (stored as any) || {};
         const merged = {
           ...prevUser,
           name: profile?.data?.name ?? payload.name ?? prevUser?.name,
@@ -154,7 +222,7 @@ export default function UserInfoCard({
               prevUser?.businessProfile?.certificate,
           },
         };
-        localStorage.setItem("user", JSON.stringify(merged));
+        StorageService.setItem(STORAGE_KEYS.USER, merged);
       } catch {}
     } catch (error) {
       // Error toasts handled in service
@@ -512,23 +580,132 @@ export default function UserInfoCard({
                   <i className="fas fa-globe text-gray-500"></i> Country
                   <span className="text-red-500">*</span>
                 </p>
-                <input
-                  type="text"
-                  name="businessCountry"
-                  value={formData.businessCountry}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg  dark:bg-gray-800 dark:text-white/90 dark:border-gray-600"
-                  placeholder="Enter your country"
-                />
+                <div className="relative" ref={businessCountryRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBusinessCountryDropdown(!showBusinessCountryDropdown);
+                      if (showBusinessCountryDropdown) setBusinessCountrySearchTerm("");
+                    }}
+                    className="flex items-center justify-between cursor-pointer w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black text-gray-700 text-sm hover:bg-gray-100 transition-colors h-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                  >
+                    <span>
+                      {formData.businessCountry || "Select Country"}
+                    </span>
+                    <svg
+                      className="ml-1 w-3 h-3 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  {showBusinessCountryDropdown && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10 dark:bg-gray-700 dark:border-gray-600">
+                      <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg
+                              className="w-4 h-4 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                              />
+                            </svg>
+                          </div>
+                          <input
+                            type="text"
+                            value={businessCountrySearchTerm}
+                            onChange={(e) => setBusinessCountrySearchTerm(e.target.value)}
+                            className="block w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Search countries..."
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="max-h-48 overflow-y-auto">
+                        {getFilteredBusinessCountries(businessCountrySearchTerm).map(
+                          (country) => (
+                            <div
+                              key={country}
+                              onClick={() => handleBusinessCountryChange(country)}
+                              className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm dark:hover:bg-gray-600"
+                            >
+                              <span className="text-gray-900 dark:text-gray-100">
+                                {country}
+                              </span>
+                            </div>
+                          )
+                        )}
+                        {getFilteredBusinessCountries(businessCountrySearchTerm).length === 0 && (
+                          <div className="px-3 py-2 text-sm text-gray-500 text-center dark:text-gray-400">
+                            No countries found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <p className="mb-2 flex items-center gap-2 text-base font-medium text-gray-600 dark:text-gray-400">
                   <i className="fas fa-dollar-sign text-gray-500"></i> Currency
                   <span className="text-red-500">*</span>
                 </p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90 px-3 py-2">
-                  AED
-                </p>
+                <div className="relative" ref={currencyRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                    className="flex items-center justify-between cursor-pointer w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black text-gray-700 text-sm hover:bg-gray-100 transition-colors h-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                  >
+                    <span>
+                      {formData.businessCurrency || "Select Currency"}
+                    </span>
+                    <svg
+                      className="ml-1 w-3 h-3 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  {showCurrencyDropdown && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10 dark:bg-gray-700 dark:border-gray-600">
+                      <div className="max-h-48 overflow-y-auto">
+                        {currencies.map((currency) => (
+                          <div
+                            key={currency}
+                            onClick={() => handleCurrencyChange(currency)}
+                            className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm dark:hover:bg-gray-600"
+                          >
+                            <span className="text-gray-900 dark:text-gray-100">
+                              {currency}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
