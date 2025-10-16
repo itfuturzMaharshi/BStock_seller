@@ -55,6 +55,14 @@ export interface ApiResponse<T = any> {
   data?: T;
 }
 
+export interface ImportResponse {
+  status: number;
+  message: string;
+  data: {
+    imported: string;
+  };
+}
+
 export class ProductService {
   static create = async (
     payload: CreateProductRequest
@@ -245,6 +253,25 @@ export class ProductService {
         "Failed to approve product";
       toastHelper.showTost(errorMessage, "error");
       return false;
+    }
+  };
+
+    // Upload Excel file for product import
+  static uploadExcelFile = async (formData: FormData): Promise<ImportResponse> => {
+
+    const url = `${env.baseUrl}/api/seller/product/import`;
+
+    try {
+      const res = await api.post(url, formData);
+      if (res.data?.status !== 200) {
+        throw new Error(res.data?.message || 'Failed to import products');
+      }
+      toastHelper.showTost(res.data.message || 'Products imported successfully!', 'success');
+      return res.data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to import products';
+      toastHelper.showTost(errorMessage, 'error');
+      throw new Error(errorMessage);
     }
   };
 }

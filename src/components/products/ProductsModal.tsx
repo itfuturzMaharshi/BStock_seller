@@ -29,6 +29,8 @@ interface FormData {
   specification: string;
   skuFamilyId?: string;
   specificationName?: string;
+  subSkuFamilyId?: string;
+  subSkuFamilyName?: string;
   simType: string;
   color: string;
   ram: string;
@@ -61,6 +63,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
     specification: "",
     skuFamilyId: "",
     specificationName: "",
+    subSkuFamilyId: "",
+    subSkuFamilyName: "",
     simType: "",
     color: "",
     ram: "",
@@ -106,6 +110,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
           specification: specName,
           skuFamilyId: specId,
           specificationName: specName,
+          subSkuFamilyId: "",
+          subSkuFamilyName: "",
           simType: Array.isArray(editItem.simType)
             ? editItem.simType[0] || ""
             : editItem.simType || "",
@@ -136,6 +142,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
           specification: "",
           skuFamilyId: "",
           specificationName: "",
+          subSkuFamilyId: "",
+          subSkuFamilyName: "",
           simType: "",
           color: "",
           ram: "",
@@ -281,6 +289,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }));
   };
 
+  // const handleSubSpecChange = (
+  //   selectedOption: { value: string; label: string } | null
+  // ) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     subSkuFamilyName: selectedOption ? selectedOption.label : "",
+  //     subSkuFamilyId: selectedOption ? selectedOption.value : "",
+  //   }));
+  // };
+
   const handleDateChange = (date: Date | null) => {
     if (date && !isNaN(date.getTime())) {
       setFormData((prev) => ({
@@ -380,7 +398,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* SKU Family ID, Country, and Sim Type Row */}
+            {/* Row 1: SKU Family ID, Sub SKU Family, RAM */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
@@ -484,75 +502,23 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
-                  Country
+                  Sub SKU Family
                 </label>
                 <div className="relative">
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
-                  >
-                    <option value="" disabled>
-                      Select Country
-                    </option>
-                    {countryOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
-                  SIM Type
-                </label>
-                <div className="relative">
-                  <select
-                    name="simType"
-                    value={formData.simType}
-                    onChange={handleInputChange}
-                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
-                  >
-                    <option value="" disabled>
-                      Select SIM Type
-                    </option>
-                    {simOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
-                </div>
-              </div>
-            </div>
-
-            {/* Color, RAM, and Storage Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
-                  Color
-                </label>
-                <div className="relative">
-                  <select
-                    name="color"
-                    value={formData.color}
-                    onChange={handleInputChange}
-                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
-                  >
-                    <option value="" disabled>
-                      Select Color
-                    </option>
-                    {colorOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                  <input
+                    type="text"
+                    name="subSkuFamilyName"
+                    value={formData.subSkuFamilyName || ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        subSkuFamilyName: e.target.value,
+                      }))
+                    }
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-text border-gray-200 dark:border-gray-700"
+                    placeholder="Enter Sub SKU Family"
+                  />
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 pointer-events-none text-xs"></i>
                 </div>
               </div>
               <div>
@@ -578,6 +544,83 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
                 </div>
               </div>
+            </div>
+
+            {/* Row 2: SIM Type, Color, Country */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  SIM Type
+                </label>
+                <div className="relative">
+                  <select
+                    name="simType"
+                    value={formData.simType}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select SIM Type
+                    </option>
+                    {simOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Color
+                </label>
+                <div className="relative">
+                  <select
+                    name="color"
+                    value={formData.color}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select Color
+                    </option>
+                    {colorOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
+                  Country
+                </label>
+                <div className="relative">
+                  <select
+                    name="country"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
+                  >
+                    <option value="" disabled>
+                      Select Country
+                    </option>
+                    {countryOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3: Storage, Condition, Price */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
                   Storage
@@ -601,10 +644,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
                 </div>
               </div>
-            </div>
-
-            {/* Condition, Price, and Stock Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
                   Condition
@@ -642,6 +681,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   placeholder="Enter Price"
                 />
               </div>
+            </div>
+
+            {/* Row 4: Stock, MOQ, Purchase Type */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
                   Stock
@@ -656,10 +699,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   placeholder="Enter Stock Quantity"
                 />
               </div>
-            </div>
-
-            {/* MOQ and Purchase Type Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
                   MOQ
@@ -704,7 +743,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </div>
             </div>
 
-            {/* Is Negotiable, Is Flash Deal, and Expiry Time Row */}
+            {/* Row 5: Is Negotiable, Is Flash Deal, (Expiry when enabled) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center mt-6">
                 <input
