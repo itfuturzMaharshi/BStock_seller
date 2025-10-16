@@ -14,11 +14,13 @@ const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose, on
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadSample = () => {
-    const sampleUrl = "https://example.com/sample-product-template.xlsx";
+    const sampleUrl = `${import.meta.env.BASE_URL}product_import_deals.xlsx`;
     const link = document.createElement("a");
     link.href = sampleUrl;
-    link.download = "sample-product-template.xlsx";
+    link.download = "product_import_deals.xlsx";
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -70,7 +72,9 @@ const UploadExcelModal: React.FC<UploadExcelModalProps> = ({ isOpen, onClose, on
       return;
     }
     try {
-      await ProductService.importExcel(file);
+      const formData = new FormData();
+      formData.append("file", file);
+      await ProductService.uploadExcelFile(formData);
       toastHelper.showTost("File uploaded successfully!", "success");
       setFile(null);
       if (fileInputRef.current) {

@@ -79,9 +79,47 @@ const ProductModal: React.FC<ProductModalProps> = ({
     isFlashDeal: false,
     expiryTime: "",
   });
+  const [lockSimType, setLockSimType] = useState(false);
+  const [lockColor, setLockColor] = useState(false);
+  const [lockCountry, setLockCountry] = useState(false);
   const [dateError, setDateError] = useState<string | null>(null);
   const [moqError, setMoqError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [subSkuOptions, setSubSkuOptions] = useState<
+    { id: string; raw: string; label: string }[]
+  >([]);
+
+  function parseSubSkuValue(raw: string): {
+    name: string;
+    color?: string;
+    simType?: string;
+    country?: string;
+  } {
+    if (!raw || typeof raw !== "string") {
+      return { name: "" };
+    }
+    const parts = raw.split("_");
+    const name = (parts[0] || "").trim();
+    let color: string | undefined;
+    let simType: string | undefined;
+    let country: string | undefined;
+
+    if (parts.length >= 6) {
+      color = (parts[2] || "").replace(/^\[|\]$/g, "").trim();
+      const simRaw = parts[3] || ""; // e.g. ["E-Sim"]
+      try {
+        const parsed = JSON.parse(simRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          simType = String(parsed[0]);
+        }
+      } catch {
+        simType = simRaw.replace(/^[\[\"]+|[\"\]]+$/g, "").trim();
+      }
+      country = (parts[5] || "").trim();
+    }
+
+    return { name, color, simType, country };
+  }
 
   const colorOptions = ["Graphite", "Silver", "Gold", "Sierra Blue", "Mixed"];
   const countryOptions = ["Hongkong", "Dubai", "Singapore"];
@@ -106,12 +144,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
           (typeof editItem.specification === "object"
             ? editItem.specification?._id || ""
             : "");
+        const initialSubSkuId = (editItem as any)?.subSkuFamilyId || "";
+        const initialSubSkuName = (editItem as any)?.subSkuFamilyName || "";
         setFormData({
           specification: specName,
           skuFamilyId: specId,
           specificationName: specName,
-          subSkuFamilyId: "",
-          subSkuFamilyName: "",
+          subSkuFamilyId: initialSubSkuId,
+          subSkuFamilyName: initialSubSkuName,
           simType: Array.isArray(editItem.simType)
             ? editItem.simType[0] || ""
             : editItem.simType || "",
@@ -137,6 +177,53 @@ const ProductModal: React.FC<ProductModalProps> = ({
           isFlashDeal: !!editItem.isFlashDeal,
           expiryTime: editItem.expiryTime || "",
         });
+
+        // If Sub SKU is not explicitly present on the item, try to infer it
+        // by loading available Sub SKUs and matching by color/simType/country
+        (async () => {
+          try {
+            const subId = (editItem as any)?.subSkuFamilyId;
+            const subName = (editItem as any)?.subSkuFamilyName;
+            if (subId && subName) {
+              setLockSimType(false);
+              setLockColor(false);
+              setLockCountry(false);
+              return;
+            }
+            if (!specId) return;
+            const res = await ProductService.listByNameSubSkuFamily("", String(specId));
+            const subs = (res?.data?.data || res?.data?.subSkuFamilies || res?.data || []) as any[];
+            const mapped = subs.map((s: any) => {
+              const raw: string = s?.value || s?.name || "";
+              const id: string = String(s?._id || s?.id || "");
+              const parsed = parseSubSkuValue(raw);
+              return { id, raw, label: parsed.name || raw, parsed };
+            });
+            setSubSkuOptions(mapped.map(m => ({ id: m.id, raw: m.raw, label: m.label })));
+
+            const match = mapped.find(m => {
+              const sameColor = m.parsed.color ? m.parsed.color === (editItem as any)?.color : true;
+              const sameSim = m.parsed.simType ? m.parsed.simType === (Array.isArray(editItem.simType) ? editItem.simType[0] : editItem.simType) : true;
+              const sameCountry = m.parsed.country ? m.parsed.country === (editItem as any)?.country : true;
+              return sameColor && sameSim && sameCountry;
+            });
+            if (match) {
+              setFormData(prev => ({
+                ...prev,
+                subSkuFamilyId: match.id,
+                subSkuFamilyName: match.label,
+                simType: match.parsed.simType || prev.simType,
+                color: match.parsed.color || prev.color,
+                country: match.parsed.country || prev.country,
+              }));
+              setLockSimType(Boolean(match.parsed.simType));
+              setLockColor(Boolean(match.parsed.color));
+              setLockCountry(Boolean(match.parsed.country));
+            }
+          } catch {
+            // ignore prefill errors
+          }
+        })();
       } else {
         setFormData({
           specification: "",
@@ -167,6 +254,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
+    // Block manual edits when values are locked from backend
+    if (
+      (name === "simType" && lockSimType) ||
+      (name === "color" && lockColor) ||
+      (name === "country" && lockCountry)
+    ) {
+      return;
+    }
     setFormData((previous) => {
       let updatedValue: any;
       if (type === "checkbox") {
@@ -278,26 +373,74 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
+  const loadSubSkuFamilyOptions = async (inputValue: string) => {
+    try {
+      if (!formData.skuFamilyId) return [];
+      const res = await ProductService.listByNameSubSkuFamily(
+        inputValue,
+        String(formData.skuFamilyId)
+      );
+      const subs = (res?.data?.data || res?.data?.subSkuFamilies || res?.data || []) as any[];
+
+      const parsed = subs.map((s: any) => {
+        const raw: string = s?.value || s?.name || "";
+        const id: string = String(s?._id || s?.id || "");
+        const { name } = parseSubSkuValue(raw);
+        return { id, raw, label: name || raw };
+      });
+      setSubSkuOptions(parsed);
+      return parsed.map((p) => ({ value: p.id, label: p.label }));
+    } catch (error) {
+      return [];
+    }
+  };
+
   const handleSpecChange = (
     selectedOption: { value: string; label: string } | null
   ) => {
+    // On SKU Family change, reset Sub SKU and unlock dependent fields
     setFormData((prev) => ({
       ...prev,
       specification: selectedOption ? selectedOption.label : "",
       specificationName: selectedOption ? selectedOption.label : "",
       skuFamilyId: selectedOption ? selectedOption.value : "",
+      subSkuFamilyId: "",
+      subSkuFamilyName: "",
+      // clear dependent fields so user selects a valid Sub SKU again
+      simType: "",
+      color: "",
+      country: "",
     }));
+    setLockSimType(false);
+    setLockColor(false);
+    setLockCountry(false);
   };
 
-  // const handleSubSpecChange = (
-  //   selectedOption: { value: string; label: string } | null
-  // ) => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     subSkuFamilyName: selectedOption ? selectedOption.label : "",
-  //     subSkuFamilyId: selectedOption ? selectedOption.value : "",
-  //   }));
-  // };
+  const handleSubSpecChange = (
+    selectedOption: { value: string; label: string } | null
+  ) => {
+    const selectedId = selectedOption ? String(selectedOption.value) : "";
+    const matched = subSkuOptions.find((o) => o.id === selectedId);
+    const parsed = matched ? parseSubSkuValue(matched.raw) : null;
+    setFormData((prev) => ({
+      ...prev,
+      subSkuFamilyName: selectedOption ? selectedOption.label : "",
+      subSkuFamilyId: selectedId,
+      simType: parsed?.simType || prev.simType,
+      color: parsed?.color || prev.color,
+      country: parsed?.country || prev.country,
+    }));
+    // Lock fields only when backend provided values; unlock when Sub SKU cleared
+    if (selectedOption) {
+      setLockSimType(Boolean(parsed?.simType));
+      setLockColor(Boolean(parsed?.color));
+      setLockCountry(Boolean(parsed?.country));
+    } else {
+      setLockSimType(false);
+      setLockColor(false);
+      setLockCountry(false);
+    }
+  };
 
   const handleDateChange = (date: Date | null) => {
     if (date && !isNaN(date.getTime())) {
@@ -504,22 +647,113 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
                   Sub SKU Family
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="subSkuFamilyName"
-                    value={formData.subSkuFamilyName || ""}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        subSkuFamilyName: e.target.value,
-                      }))
+                <AsyncSelect
+                  key={String(formData.skuFamilyId || 'no-sku')}
+                  cacheOptions={false}
+                  defaultOptions
+                  loadOptions={loadSubSkuFamilyOptions}
+                  value={
+                    formData.subSkuFamilyId
+                      ? {
+                          value: String(formData.subSkuFamilyId),
+                          label:
+                            formData.subSkuFamilyName ||
+                            (subSkuOptions.find((o) => o.id === String(formData.subSkuFamilyId))?.label || ""),
+                        }
+                      : null
+                  }
+                  onMenuOpen={() => {
+                    if (formData.skuFamilyId) {
+                      loadSubSkuFamilyOptions("");
                     }
-                    className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-text border-gray-200 dark:border-gray-700"
-                    placeholder="Enter Sub SKU Family"
-                  />
-                  <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 pointer-events-none text-xs"></i>
-                </div>
+                  }}
+                  onChange={handleSubSpecChange}
+                  placeholder={
+                    formData.skuFamilyId
+                      ? "Select Sub SKU Family"
+                      : "Select SKU Family first"
+                  }
+                  isDisabled={!formData.skuFamilyId}
+                  isSearchable
+                  className="text-gray-800 dark:text-gray-200"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      backgroundColor: document.documentElement.classList.contains("dark")
+                        ? "#1F2937"
+                        : "#F9FAFB",
+                      borderColor: document.documentElement.classList.contains("dark")
+                        ? "#374151"
+                        : "#E5E7EB",
+                      borderRadius: "0.5rem",
+                      padding: "0.25rem 0.75rem",
+                      height: "42px",
+                      minHeight: "42px",
+                      fontSize: "0.875rem",
+                      "&:hover": {
+                        borderColor: document.documentElement.classList.contains("dark")
+                          ? "#4B5563"
+                          : "#D1D5DB",
+                      },
+                      boxShadow: "none",
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#E5E7EB"
+                        : "#111827",
+                      padding: 0,
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      backgroundColor: document.documentElement.classList.contains("dark")
+                        ? "#1F2937"
+                        : "#FFFFFF",
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#E5E7EB"
+                        : "#111827",
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? document.documentElement.classList.contains("dark")
+                          ? "#2563EB"
+                          : "#3B82F6"
+                        : state.isFocused
+                        ? document.documentElement.classList.contains("dark")
+                          ? "#374151"
+                          : "#F3F4F6"
+                        : document.documentElement.classList.contains("dark")
+                          ? "#1F2937"
+                          : "#FFFFFF",
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#E5E7EB"
+                        : "#111827",
+                      "&:hover": {
+                        backgroundColor: document.documentElement.classList.contains("dark")
+                          ? "#374151"
+                          : "#F3F4F6",
+                      },
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#E5E7EB"
+                        : "#111827",
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: document.documentElement.classList.contains("dark")
+                        ? "#9CA3AF"
+                        : "#6B7280",
+                    }),
+                  }}
+                  components={{
+                    DropdownIndicator: () => (
+                      <i className="fas fa-chevron-down text-gray-400 text-xs" />
+                    ),
+                  }}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-950 dark:text-gray-200 mb-2">
@@ -557,6 +791,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     name="simType"
                     value={formData.simType}
                     onChange={handleInputChange}
+                    disabled={lockSimType}
                     className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
                   >
                     <option value="" disabled>
@@ -580,6 +815,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     name="color"
                     value={formData.color}
                     onChange={handleInputChange}
+                    disabled={lockColor}
                     className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
                   >
                     <option value="" disabled>
@@ -603,6 +839,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     name="country"
                     value={formData.country}
                     onChange={handleInputChange}
+                    disabled={lockCountry}
                     className="w-full pl-3 pr-8 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm appearance-none cursor-pointer border-gray-200 dark:border-gray-700"
                   >
                     <option value="" disabled>

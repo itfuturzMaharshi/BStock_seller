@@ -200,6 +200,25 @@ export class ProductService {
     }
   };
 
+  static listByNameSubSkuFamily = async (
+    search: string = "",
+    skuFamilyId: string
+  ): Promise<ApiResponse> => {
+    const url = `${env.baseUrl}/api/seller/product/listByNameSubSkuFamily`;
+    try {
+      const res = await api.post(url, { search, skuFamilyId });
+      const data: ApiResponse = res.data;
+      return data;
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to list sub sku family by name";
+      toastHelper.showTost(errorMessage, "error");
+      throw new Error(errorMessage);
+    }
+  };
+
   static importExcel = async (file: File): Promise<ApiResponse> => {
     const url = `${env.baseUrl}/api/seller/product/import`;
     const formData = new FormData();
