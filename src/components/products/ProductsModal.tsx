@@ -492,6 +492,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         purchaseType: normalizedPurchaseType,
         specification: formData.specificationName || formData.specification || "",
         skuFamilyId: formData.skuFamilyId || "",
+        subSkuFamilyId: formData.subSkuFamilyId || "",
       };
       
       await onSave(payload);

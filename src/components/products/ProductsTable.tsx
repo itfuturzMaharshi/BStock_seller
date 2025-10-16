@@ -11,6 +11,8 @@ interface Product {
   id?: string;
   specification: string;
   name: string;
+  skuFamilyId?: { name?: string } | null;
+  subSkuFamilyId?: { name?: string } | null;
   simType: string;
   color: string;
   ram: string;
@@ -84,6 +86,7 @@ const ProductsTable: React.FC = () => {
           id: productId,
           specification: productData.specification,
           skuFamilyId: productData.skuFamilyId,
+          subSkuFamilyId: productData.subSkuFamilyId,
           simType: productData.simType,
           color: productData.color,
           ram: productData.ram,
@@ -104,6 +107,7 @@ const ProductsTable: React.FC = () => {
         // For create, send all required fields
         const processedData = {
           skuFamilyId: productData.skuFamilyId,
+          subSkuFamilyId: productData.subSkuFamilyId,
           specification: productData.specification,
           simType: productData.simType,
           color: productData.color,
@@ -293,6 +297,9 @@ const ProductsTable: React.FC = () => {
                   Name
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 align-middle">
+                  Sub SKU Name
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 align-middle">
                   SIM Type
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 align-middle">
@@ -321,7 +328,7 @@ const ProductsTable: React.FC = () => {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="p-12 text-center">
+                  <td colSpan={11} className="p-12 text-center">
                     <div className="text-gray-500 dark:text-gray-400 text-lg">
                       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-600 mx-auto mb-4"></div>
                       Loading Products...
@@ -332,7 +339,7 @@ const ProductsTable: React.FC = () => {
                   Array.isArray(productsData) ? productsData.length === 0 : true
                 ) ? (
                 <tr>
-                  <td colSpan={10} className="p-12 text-center">
+                  <td colSpan={11} className="p-12 text-center">
                     <div className="text-gray-500 dark:text-gray-400 text-lg">
                       No products found
                     </div>
@@ -357,7 +364,10 @@ const ProductsTable: React.FC = () => {
                         />
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
-                        {item.name}
+                        {item.skuFamilyId?.name || item.name || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {item.subSkuFamilyId?.name || "-"}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                         {item.simType}

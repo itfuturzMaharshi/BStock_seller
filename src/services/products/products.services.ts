@@ -5,6 +5,7 @@ import toastHelper from "../../utils/toastHelper";
 export interface CreateProductRequest {
   specification: string;
   skuFamilyId?: string;
+  subSkuFamilyId?: string;
   simType: string;
   color: string;
   ram: string;
@@ -27,6 +28,7 @@ export interface UpdateProductRequest {
   id: string;
   specification?: string;
   skuFamilyId?: string;
+  subSkuFamilyId?: string;
   simType?: string;
   color?: string;
   ram?: string;
@@ -71,7 +73,8 @@ export class ProductService {
     try {
       // Process numeric values and boolean flags
       const processedPayload = {
-        skuFamilyId: payload.skuFamilyId || "", 
+        skuFamilyId: payload.skuFamilyId, 
+        subSkuFamilyId: payload.subSkuFamilyId,
         specification: payload.specification,
         simType: payload.simType,
         color: payload.color,
@@ -88,7 +91,17 @@ export class ProductService {
         expiryTime: payload.isFlashDeal ? payload.expiryTime : undefined,
       };
 
-      const res = await api.post(url, processedPayload);
+      // Remove undefined and empty-string values, but always keep subSkuFamilyId if provided (even empty string)
+      const cleanPayload = Object.fromEntries(
+        Object.entries(processedPayload).filter(([key, value]) => {
+          if (key === "subSkuFamilyId") {
+            return value !== undefined; // allow empty string to pass through
+          }
+          return value !== undefined && value !== "";
+        })
+      );
+
+      const res = await api.post(url, cleanPayload);
 
       const data: ApiResponse = res.data;
       toastHelper.showTost(
@@ -128,7 +141,8 @@ export class ProductService {
       // Process payload similar to create method
       const processedPayload = {
         id: payload.id,
-        skuFamilyId: payload.skuFamilyId || "", 
+        skuFamilyId: payload.skuFamilyId, 
+        subSkuFamilyId: payload.subSkuFamilyId,
         specification: payload.specification,
         simType: payload.simType,
         color: payload.color,
@@ -145,9 +159,14 @@ export class ProductService {
         expiryTime: payload.isFlashDeal ? payload.expiryTime : undefined,
       };
       
-      // Remove undefined values
+      // Remove undefined and empty-string values, but always keep subSkuFamilyId if provided (even empty string)
       const cleanPayload = Object.fromEntries(
-        Object.entries(processedPayload).filter(([_, value]) => value !== undefined)
+        Object.entries(processedPayload).filter(([key, value]) => {
+          if (key === "subSkuFamilyId") {
+            return value !== undefined; // allow empty string to pass through
+          }
+          return value !== undefined && value !== "";
+        })
       );
       
       const res = await api.post(url, cleanPayload);
