@@ -35,6 +35,7 @@ interface Product {
 const ProductsTable: React.FC = () => {
   const [productsData, setProductsData] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
@@ -48,7 +49,7 @@ const ProductsTable: React.FC = () => {
   // Fetch products on component mount and when page/search changes
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, searchTerm]);
+  }, [currentPage, searchTerm, statusFilter]);
 
   const fetchProducts = async () => {
     try {
@@ -63,10 +64,23 @@ const ProductsTable: React.FC = () => {
           ? response.data.docs
           : [];
       
+      let filteredData = docs;
+      if (statusFilter !== "all") {
+        filteredData = docs.filter((product: Product) => {
+          if (statusFilter === "approved") {
+            return product.isApproved;
+          } else if (statusFilter === "pending") {
+            return product.isVerified && !product.isApproved;
+          } else if (statusFilter === "verification") {
+            return !product.isVerified;
+          }
+          return true;
+        });
+      }
       
-      setProductsData(docs);
-      setTotalDocs(Number(response?.data?.totalDocs) || docs.length || 0);
-      setTotalPages(Number(response?.data?.totalPages) || 1);
+      setProductsData(filteredData);
+      setTotalDocs(filteredData.length);
+      setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
     } catch (error) {
       toastHelper.error("Failed to fetch products");
     } finally {
@@ -248,14 +262,14 @@ const ProductsTable: React.FC = () => {
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 shadow-sm">
         {/* Table Header with Controls */}
         <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1">
             {/* Search */}
-            <div className="relative">
+            <div className="relative w-full">
               <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
               <input
                 type="text"
                 placeholder="Search by SKU Family ID or other..."
-                className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-64"
+                className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full"
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setSearchTerm(e.target.value);
@@ -265,6 +279,23 @@ const ProductsTable: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Status Filter (UI only) */}
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm appearance-none cursor-pointer"
+              >
+                <option value="all">All Status</option>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending Approval</option>
+                <option value="verification">Under Verification</option>
+              </select>
+              <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+            </div>
             <button
               className="inline-flex items-center gap-2 rounded-lg bg-[#0071E0] text-white px-4 py-2 text-sm font-medium hover:bg-blue-600 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
               onClick={() => setIsUploadModalOpen(true)}

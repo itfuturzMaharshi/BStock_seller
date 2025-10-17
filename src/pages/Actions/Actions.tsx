@@ -1,15 +1,15 @@
+import ActionsTable from "../../components/actions/ActionsTable";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ProductsTable from "../../components/products/ProductsTable";
 
-const Products = () => {
+const Actions = () => {
   return (
     <>
       <PageBreadcrumb pageTitle="Products" />
       <div className="space-y-6">
-        <ProductsTable />
+        <ActionsTable />
       </div>
     </>
   );
 };
 
-export default Products;
+export default Actions;

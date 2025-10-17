@@ -25,6 +25,11 @@ const navItems: NavItem[] = [
     name: "Products",
     path: "/products",
   },
+  {
+    icon: <i className="fas fa-box-open"></i>,
+    name: "Actions",
+    path: "/actions",
+  },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -35,7 +40,9 @@ const AppSidebar: React.FC = () => {
     type: "main";
     index: number;
   } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
+  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
+    {}
+  );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const isActive = useCallback(
@@ -116,7 +123,9 @@ const AppSidebar: React.FC = () => {
                 {nav.icon}
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text text-base ml-2 flex-1">{nav.name}</span>
+                <span className="menu-item-text text-base ml-2 flex-1">
+                  {nav.name}
+                </span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <i
@@ -147,7 +156,9 @@ const AppSidebar: React.FC = () => {
                   {nav.icon}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text text-base ml-2 flex-1">{nav.name}</span>
+                  <span className="menu-item-text text-base ml-2 flex-1">
+                    {nav.name}
+                  </span>
                 )}
               </Link>
             )

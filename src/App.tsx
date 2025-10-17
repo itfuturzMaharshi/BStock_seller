@@ -1,4 +1,9 @@
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  HashRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -21,6 +26,7 @@ import Home from "./pages/Dashboard/Home";
 import Products from "./pages/Products/Products";
 import VerifyEmail from "./pages/AuthPages/VerifyEmail";
 import VerifyNotice from "./pages/AuthPages/VerifyNotice";
+import Actions from "./pages/Actions/Actions";
 
 export default function App() {
   return (
@@ -40,6 +46,7 @@ export default function App() {
             {/* <Route path="/calendar" element={<Calendar />} /> */}
             <Route path="/blank" element={<Blank />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/actions" element={<Actions />} />
 
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />
@@ -63,7 +70,10 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/api/seller/verify-email/:token" element={<VerifyEmail />} />
+          <Route
+            path="/api/seller/verify-email/:token"
+            element={<VerifyEmail />}
+          />
           <Route path="/verify-notice" element={<VerifyNotice />} />
 
           {/* Fallback Route */}
