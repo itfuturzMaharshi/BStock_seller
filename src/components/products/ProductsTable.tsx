@@ -11,8 +11,8 @@ interface Product {
   id?: string;
   specification: string;
   name: string;
-  skuFamilyId?: { name?: string } | null;
-  subSkuFamilyId?: { name?: string } | null;
+  skuFamilyId?: { name?: string; _id?: string; id?: string } | string | null;
+  subSkuFamilyId?: { name?: string; _id?: string; id?: string } | string | null;
   simType: string;
   color: string;
   ram: string;
@@ -364,10 +364,14 @@ const ProductsTable: React.FC = () => {
                         />
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
-                        {item.skuFamilyId?.name || item.name || "-"}
+                        {typeof item.skuFamilyId === "object" && item.skuFamilyId !== null 
+                          ? item.skuFamilyId.name || item.name || "-"
+                          : item.name || "-"}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {item.subSkuFamilyId?.name || "-"}
+                        {typeof item.subSkuFamilyId === "object" && item.subSkuFamilyId !== null 
+                          ? item.subSkuFamilyId.name || "-"
+                          : "-"}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                         {item.simType}

@@ -133,7 +133,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
       if (editItem) {
         // In edit mode, preserve the exact identifiers
         const fromListName = (editItem as any)?.name as string | undefined;
-        const fromListId = (editItem as any)?.skuFamilyId as string | undefined;
+        const fromListIdRaw = (editItem as any)?.skuFamilyId;
+        const fromListId = typeof fromListIdRaw === "object" && fromListIdRaw !== null
+          ? (fromListIdRaw as any)?._id || (fromListIdRaw as any)?.id || ""
+          : String(fromListIdRaw || "");
         const specName =
           fromListName ??
           (typeof editItem.specification === "object"
@@ -144,11 +147,19 @@ const ProductModal: React.FC<ProductModalProps> = ({
           (typeof editItem.specification === "object"
             ? editItem.specification?._id || ""
             : "");
-        const initialSubSkuId = (editItem as any)?.subSkuFamilyId || "";
+        
+        // Handle case where skuFamilyId might be an object with _id property
+        const finalSpecId = typeof specId === "object" && specId !== null 
+          ? (specId as any)?._id || (specId as any)?.id || "" 
+          : String(specId || "");
+        const initialSubSkuIdRaw = (editItem as any)?.subSkuFamilyId;
+        const initialSubSkuId = typeof initialSubSkuIdRaw === "object" && initialSubSkuIdRaw !== null
+          ? (initialSubSkuIdRaw as any)?._id || (initialSubSkuIdRaw as any)?.id || ""
+          : String(initialSubSkuIdRaw || "");
         const initialSubSkuName = (editItem as any)?.subSkuFamilyName || "";
         setFormData({
           specification: specName,
-          skuFamilyId: specId,
+          skuFamilyId: finalSpecId,
           specificationName: specName,
           subSkuFamilyId: initialSubSkuId,
           subSkuFamilyName: initialSubSkuName,
@@ -190,8 +201,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
               setLockCountry(false);
               return;
             }
-            if (!specId) return;
-            const res = await ProductService.listByNameSubSkuFamily("", String(specId));
+            if (!finalSpecId) return;
+            const res = await ProductService.listByNameSubSkuFamily("", finalSpecId);
             const subs = (res?.data?.data || res?.data?.subSkuFamilies || res?.data || []) as any[];
             const mapped = subs.map((s: any) => {
               const raw: string = s?.value || s?.name || "";
