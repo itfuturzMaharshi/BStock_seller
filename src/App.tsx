@@ -26,7 +26,7 @@ import Home from "./pages/Dashboard/Home";
 import Products from "./pages/Products/Products";
 import VerifyEmail from "./pages/AuthPages/VerifyEmail";
 import VerifyNotice from "./pages/AuthPages/VerifyNotice";
-import Actions from "./pages/Actions/Actions";
+import Activities from "./pages/Activities/Activities";
 
 export default function App() {
   return (
@@ -46,7 +46,7 @@ export default function App() {
             {/* <Route path="/calendar" element={<Calendar />} /> */}
             <Route path="/blank" element={<Blank />} />
             <Route path="/products" element={<Products />} />
-            <Route path="/actions" element={<Actions />} />
+            <Route path="/activities" element={<Activities />} />
 
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />

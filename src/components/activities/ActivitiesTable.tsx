@@ -1,7 +1,7 @@
 
 import React from "react";
 
-const ActionsTable: React.FC = () => {
+const ActivitiesTable: React.FC = () => {
   return (
     <div className="p-4 max-w-[calc(100vw-360px)] mx-auto">
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 shadow-sm">
@@ -114,4 +114,4 @@ const ActionsTable: React.FC = () => {
   );
 };
 
-export default ActionsTable;
+export default ActivitiesTable;
